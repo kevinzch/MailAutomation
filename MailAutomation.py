@@ -9,8 +9,12 @@ import os
 START_TIME_STR = '06:00:00'
 END_TIME_STR   = '22:00:00'
 
-FOLDER_CALENDAR = 9  # Reference: https://docs.microsoft.com/en-us/office/vba/api/outlook.oldefaultfolders
-BODY_FORMAT = 3      # 1: plain, 2: HTML, 3: richtext Reference: https://docs.microsoft.com/en-us/office/vba/api/outlook.olbodyformat
+# Reference: https://docs.microsoft.com/en-us/office/vba/api/outlook.oldefaultfolders
+FOLDER_CALENDAR = 9
+
+# Reference: https://docs.microsoft.com/en-us/office/vba/api/outlook.olbodyformat
+# 1: plain, 2: HTML, 3: richtext
+BODY_FORMAT = 3      
 
 MAIL_SUBJECT_TAG = '【〇〇〇〇連絡】'
 
@@ -74,10 +78,13 @@ def getSettings(filePath):
                     except KeyError:
                         tmpDict[key] = [value]
         
-        Settings.toList = list(tmpDict['To'])
-        Settings.ccList = list(tmpDict['CC'])
-        Settings.selfName = str(tmpDict['SelfName'])
-        Settings.supervisorName = str(tmpDict['SupervisorName'])
+        # Pass local dictionary values(list) to variables in Settings
+        Settings.toList = tmpDict['To']
+        Settings.ccList = tmpDict['CC']
+        
+        # Convert dictionary values(list) to string and pass them to variables in Settings
+        Settings.selfName = ''.join(tmpDict['SelfName'])
+        Settings.supervisorName = ''.join(tmpDict['SupervisorName'])
 
 workDate = datetime.today().date() + timedelta(1)
 startTime = time.fromisoformat(START_TIME_STR)
