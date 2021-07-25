@@ -86,14 +86,35 @@ def getSettings(filePath):
         Settings.selfName = ''.join(tmpDict['SelfName'])
         Settings.supervisorName = ''.join(tmpDict['SupervisorName'])
 
-workDate = datetime.today().date() + timedelta(1)
-startTime = time.fromisoformat(START_TIME_STR)
-startDateTime = datetime.combine(workDate, startTime)
-endTime = time.fromisoformat(END_TIME_STR)
-endDateTime = datetime.combine(workDate, endTime)
+if __name__ == "__main__":
+    try:
+        functionSel = int(input('機能をご選択ください(1:予定連絡、2:開始連絡、3:終了連絡)：'))
 
-getSettings(Settings.settingFilePath)
-print(str(Settings.selfName))
-calenderItems = getCalendarItems(startDateTime, endDateTime)
-mailBody = makeMailBody(calenderItems)
-sendSchedule(mailBody, workDate)
+        # 予定連絡
+        if functionSel == 1:
+            workDate = datetime.today().date() + timedelta(1)
+            startTime = time.fromisoformat(START_TIME_STR)
+            startDateTime = datetime.combine(workDate, startTime)
+            endTime = time.fromisoformat(END_TIME_STR)
+            endDateTime = datetime.combine(workDate, endTime)
+
+            getSettings(Settings.settingFilePath)
+            calenderItems = getCalendarItems(startDateTime, endDateTime)
+            mailBody = makeMailBody(calenderItems)
+            sendSchedule(mailBody, workDate)
+
+        # 開始連絡
+        elif functionSel == 2:
+            pass
+
+        # 終了連絡
+        elif functionSel == 3:
+            pass
+
+        # Unexpected input
+        else:
+            print('数字1、2または3をご入力ください。')
+            
+    except:
+        print('数字1、2または3をご入力ください。')
+
