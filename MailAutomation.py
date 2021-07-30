@@ -5,6 +5,7 @@ import win32com.client
 from datetime import datetime, timedelta, time
 import csv
 import os
+import sys
 
 START_TIME_STR = '06:00:00'
 END_TIME_STR   = '22:00:00'
@@ -23,12 +24,20 @@ MAIL_BODY_BORDER = '------------------------------------------------------------
 MAIL_BODY_SIGNOFF = '\n〇〇〇〇〇'
 
 class Settings:
-    settingFilePath = os.path.join(os.path.dirname(__file__), 'settings.csv')
-
+    settingFileName = 'settings.csv'
     toList = []
     ccList = []
     selfName = ''
     supervisorName = ''
+
+    # application is a frozen exe
+    if getattr(sys, 'frozen', False):
+        appPath = os.path.dirname(sys.executable)
+    # application is a script file
+    else:
+        appPath = os.path.dirname(__file__)
+
+    settingFilePath = os.path.join(appPath, settingFileName)    
 
 def getCalendarItems(start, end):
     outlookNamespace = win32com.client.Dispatch("Outlook.Application").GetNamespace("MAPI")
@@ -118,3 +127,4 @@ if __name__ == "__main__":
     except:
         print('数字1、2または3をご入力ください。')
 
+os.system('pause')
