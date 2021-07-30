@@ -3,9 +3,9 @@
 
 import win32com.client
 from datetime import datetime, timedelta, time
-import csv
 import os
 import sys
+import json
 
 START_TIME_STR = '06:00:00'
 END_TIME_STR   = '22:00:00'
@@ -23,10 +23,10 @@ MAIL_BODY_GREETING = '〇〇〇〇〇\n'
 MAIL_BODY_BORDER = '------------------------------------------------------------------'
 MAIL_BODY_SIGNOFF = '\n〇〇〇〇〇'
 
-class Settings:
-    settingFileName = 'settings.csv'
-    toList = []
-    ccList = []
+class Configration:
+    configFileName = 'config.json'
+    toAddr = ''
+    ccAddr = ''
     selfName = ''
     supervisorName = ''
 
@@ -37,7 +37,7 @@ class Settings:
     else:
         appPath = os.path.dirname(__file__)
 
-    settingFilePath = os.path.join(appPath, settingFileName)    
+    settingFilePath = os.path.join(appPath, configFileName)    
 
 def getCalendarItems(start, end):
     outlookNamespace = win32com.client.Dispatch("Outlook.Application").GetNamespace("MAPI")
@@ -54,9 +54,9 @@ def sendSchedule(mBody, date):
     outlook = win32com.client.Dispatch("Outlook.Application")
     tmpMail = outlook.CreateItem(0)
     tmpMail.BodyFormat = BODY_FORMAT
-    tmpMail.To = ';'.join(Settings.toList)
-    tmpMail.CC = ';'.join(Settings.ccList)
-    tmpMail.Subject = MAIL_SUBJECT_TAG + str(Settings.selfName) + " " + date.strftime("%m/%d")
+    tmpMail.To = Configration.toAddr
+    tmpMail.CC = Configration.ccAddr
+    tmpMail.Subject = MAIL_SUBJECT_TAG + str(Configration.selfName) + " " + date.strftime("%m/%d")
     tmpMail.Body = mBody
     tmpMail.Display()
 
@@ -76,24 +76,13 @@ def makeMailBody(calItems):
     return mBody
 
 def getSettings(filePath):
-    with open(filePath, encoding='utf-8') as tmpFile:
-        tmpData = csv.DictReader(tmpFile, delimiter=',')
-        tmpDict = {}
-        for row in tmpData:
-            for key, value in row.items():
-                if value is not None and value != '':
-                    try:
-                        tmpDict[key].append(value)
-                    except KeyError:
-                        tmpDict[key] = [value]
-        
-        # Pass local dictionary values(list) to variables in Settings
-        Settings.toList = tmpDict['To']
-        Settings.ccList = tmpDict['CC']
-        
-        # Convert dictionary values(list) to string and pass them to variables in Settings
-        Settings.selfName = ''.join(tmpDict['SelfName'])
-        Settings.supervisorName = ''.join(tmpDict['SupervisorName'])
+    with open(filePath, encoding='utf-8') as configFile:
+        configDict = json.load(configFile)
+
+        Configration.toAddr = configDict['To']
+        Configration.ccAddr = configDict['Cc']
+        Configration.selfName = configDict['SelfName']
+        Configration.supervisorName = configDict['SupervisorName']
 
 if __name__ == "__main__":
     try:
@@ -107,7 +96,7 @@ if __name__ == "__main__":
             endTime = time.fromisoformat(END_TIME_STR)
             endDateTime = datetime.combine(workDate, endTime)
 
-            getSettings(Settings.settingFilePath)
+            getSettings(Configration.settingFilePath)
             calenderItems = getCalendarItems(startDateTime, endDateTime)
             mailBody = makeMailBody(calenderItems)
             sendSchedule(mailBody, workDate)
