@@ -18,21 +18,18 @@ FOLDER_SENTMAIL = 5
 # 1: plain, 2: HTML, 3: richtext
 BODY_FORMAT = 3      
 
-MAIL_SUBJECT_TAG = '【在宅勤務予定】'
-WORKSTART_TAG = '【在宅勤務開始連絡】'
+SUBJECT_SCHEDULE_TAG = '【在宅勤務予定】'
+SUBJECT_WORKSTART_TAG = '【在宅勤務開始】'
+SUBJECT_WORKEND_TAG = '【在宅勤務終了】'
 
-GREETING_STR = '〇〇〇〇〇\n'
-MORNING_GREETING_STR = 'おはようございます。'
-WORKSTART_TEXT = '本日在宅勤務開始します。'
-MAIL_BODY_BORDER = '------------------------------------------------------------------'
-MAIL_BODY_SIGNOFF = '\n以上、よろしくお願いいたします。'
+BODY_PERSONAL_TITLE = 'さん\n'
+BODY_SCHEDULE = 'です。\n明日下記予定で在宅勤務いたします。\n'
+BODY_WORKSTART = 'です。\n本日在宅勤務開始します。\n'
+BODY_BORDER = '------------------------------------------------------------------'
+BODY_SIGNOFF = '以上、よろしくお願いいたします。'
 
 class Configration:
     configFileName = 'config.json'
-    toAddr = ''
-    ccAddr = ''
-    selfName = ''
-    supervisorName = ''
 
     # application is a frozen exe
     if getattr(sys, 'frozen', False):
@@ -41,115 +38,107 @@ class Configration:
     else:
         appPath = os.path.dirname(__file__)
 
-    configFilePath = os.path.join(appPath, configFileName)    
+    configFilePath = os.path.join(appPath, configFileName)
+
+    with open(configFilePath, encoding='utf-8') as configFile:
+        configDict = json.load(configFile)
+        toAddr = configDict['To']
+        ccAddr = configDict['Cc']
+        selfName = configDict['SelfName']
+        supervisorName = configDict['SupervisorName']
 
 class Outlook:
-    namespace = win32com.client.Dispatch("Outlook.Application").GetNamespace("MAPI")
+    outlookApp = win32com.client.Dispatch("Outlook.Application")
+    namespace = outlookApp.GetNamespace("MAPI")
     calender = namespace.GetDefaultFolder(FOLDER_CALENDAR).Items
     sentMail = namespace.GetDefaultFolder(FOLDER_SENTMAIL).Items
 
-def getCalendarItems(start, end):
+def sendSchedule():
+    # 勤務予定日は翌日なので、翌日の日付を取得
+    tmpWorkDate = datetime.today().date() + timedelta(1)
+    tmpStartTime = time.fromisoformat(START_TIME_STR)
+    tmpStartDateTime = datetime.combine(tmpWorkDate, tmpStartTime)
+    tmpEndTime = time.fromisoformat(END_TIME_STR)
+    tmpEndDateTime = datetime.combine(tmpWorkDate, tmpEndTime)
+
     tmpCalItems = Outlook.calender
     tmpCalItems.IncludeRecurrences = True
     tmpCalItems.Sort("[Start]")
 
-    tmpRestriction = "[Start] >= '" + start.strftime("%Y-%m-%d %H:%M") + "' And [End] <= '" + end.strftime("%Y-%m-%d %H:%M") + "'"
+    tmpRestriction = "[Start] >= '" + tmpStartDateTime.strftime("%Y-%m-%d %H:%M") + "' And [End] <= '" + tmpEndDateTime.strftime("%Y-%m-%d %H:%M") + "'"
     tmpCalItems = tmpCalItems.Restrict(tmpRestriction)
 
-    return tmpCalItems
-
-def sendSchedule(mBody, date):
-    outlook = win32com.client.Dispatch("Outlook.Application")
-    tmpMail = outlook.CreateItem(0)
-    tmpMail.BodyFormat = BODY_FORMAT
-    tmpMail.To = Configration.toAddr
-    tmpMail.CC = Configration.ccAddr
-    tmpMail.Subject = MAIL_SUBJECT_TAG + Configration.selfName + " " + date.strftime("%m/%d")
-    tmpMail.Body = mBody
-    tmpMail.Display()
-
-def makeBodyForNewMail(calItems):
     tmpBodyList = []
-    tmpBodyList.append(GREETING_STR)
-    tmpBodyList.append(MAIL_BODY_BORDER)
-    for item in calItems:
-        subjectStr = item.subject
-        timeStr = "{0}～{1}".format(item.start.strftime("%H:%M"), item.end.strftime("%H:%M"))
-        tmpBodyList.append(subjectStr + ' ' + timeStr)
+    tmpBodyList.append(Configration.supervisorName + BODY_PERSONAL_TITLE)
+    tmpBodyList.append(Configration.selfName + BODY_SCHEDULE)
+    tmpBodyList.append(BODY_BORDER)
+    for tmpItem in tmpCalItems:
+        tmpSubjectStr = tmpItem.subject
+        tmpTimeStr = "{0}～{1}".format(tmpItem.start.strftime("%H:%M"), tmpItem.end.strftime("%H:%M"))
+        tmpBodyList.append(tmpSubjectStr + ' ' + tmpTimeStr)
 
-    tmpBodyList.append(MAIL_BODY_BORDER)
-    tmpBodyList.append(MAIL_BODY_SIGNOFF)
+    tmpBodyList.append(BODY_BORDER + '\n')
+    tmpBodyList.append(BODY_SIGNOFF)
 
-    mBody = '\n'.join(tmpBodyList)
-    return mBody
+    tmpMailBody = '\n'.join(tmpBodyList)
 
-def getConfigration(filePath):
-    with open(filePath, encoding='utf-8') as configFile:
-        configDict = json.load(configFile)
+    tmpNewMail = Outlook.outlookApp.CreateItem(0)
+    tmpNewMail.BodyFormat = BODY_FORMAT
+    tmpNewMail.To = Configration.toAddr
+    tmpNewMail.CC = Configration.ccAddr
+    tmpNewMail.Subject = SUBJECT_SCHEDULE_TAG + Configration.selfName + " " + tmpWorkDate.strftime("%m/%d")
+    tmpNewMail.Body = tmpMailBody
+    tmpNewMail.Display()
 
-        Configration.toAddr = configDict['To']
-        Configration.ccAddr = configDict['Cc']
-        Configration.selfName = configDict['SelfName']
-        Configration.supervisorName = configDict['SupervisorName']
+def sendWorkStartEndMail(parTagToSearch, parTagForTitle):
+    # 当日の連絡なので、当日の日付を取得
+    tmpWorkDate = datetime.today().date()
+    tmpSubjectToFind = parTagToSearch + Configration.selfName + " " + tmpWorkDate.strftime("%m/%d")
+    tmpSentMailItems = Outlook.sentMail
 
-def sendWorkStartMail():
-    # 本日の開始連絡なので、当日の日付を取得
-    workDate = datetime.today().date()
-    subjectToFind = MAIL_SUBJECT_TAG + Configration.selfName + " " + workDate.strftime("%m/%d")
-    sentMailItems = Outlook.sentMail
+    tmpIsMailFound = False
 
-    isMailFound = False
+    print(tmpSubjectToFind)
 
-    for item in sentMailItems:
-        if item.Subject == subjectToFind:
-            replyMail = item.Reply()
-            replyMail.Subject = WORKSTART_TAG + Configration.selfName + " " + workDate.strftime("%m/%d") + ' 8:15～'
+    for tmpItem in tmpSentMailItems:
+        if tmpSubjectToFind in tmpItem.Subject:
+            tmpReplyMail = tmpItem.Reply()
+            tmpReplyMail.Subject = parTagForTitle + Configration.selfName + " " + tmpWorkDate.strftime("%m/%d")
             tmpBodyList = []
-            tmpBodyList.append(Configration.supervisorName + 'さん\n')
-            tmpBodyList.append(MORNING_GREETING_STR)
-            tmpBodyList.append(Configration.selfName + 'です。\n')
-            tmpBodyList.append(WORKSTART_TEXT)
-            tmpBodyList.append(MAIL_BODY_SIGNOFF)
-            replyMail.Body = '\n'.join(tmpBodyList) + replyMail.Body
-            replyMail.To = Configration.toAddr
-            replyMail.CC = Configration.ccAddr
-            replyMail.Display()
-            isMailFound = True
+            tmpBodyList.append(Configration.supervisorName + BODY_PERSONAL_TITLE)
+            tmpBodyList.append(Configration.selfName + BODY_WORKSTART)
+            tmpBodyList.append(BODY_SIGNOFF)
+            tmpReplyMail.Body = '\n'.join(tmpBodyList) + tmpReplyMail.Body
+            tmpReplyMail.To = Configration.toAddr
+            tmpReplyMail.CC = Configration.ccAddr
+            tmpReplyMail.Display()
+            tmpIsMailFound = True
 
-    if isMailFound == False:
-        print('在宅勤務予定の送信済みメールが見つかりません。')
+    if tmpIsMailFound == False:
+        print(parTagToSearch + 'のメールが見つかりません。')
 
 if __name__ == "__main__":
-    # try:
+    try:
         functionSel = int(input('機能をご選択ください(1:予定連絡、2:開始連絡、3:終了連絡)：'))
-        getConfigration(Configration.configFilePath)
 
         # 予定連絡：翌日の予定を上司に送付する
-        if functionSel == 1:
-            # 勤務予定日は翌日なので、翌日の日付を取得
-            workDate = datetime.today().date() + timedelta(1)
-            startTime = time.fromisoformat(START_TIME_STR)
-            startDateTime = datetime.combine(workDate, startTime)
-            endTime = time.fromisoformat(END_TIME_STR)
-            endDateTime = datetime.combine(workDate, endTime)
-            
-            calenderItems = getCalendarItems(startDateTime, endDateTime)
-            mailBody = makeBodyForNewMail(calenderItems)
-            sendSchedule(mailBody, workDate)
+        if functionSel == 1:            
+            sendSchedule()
 
-        # 開始連絡：本日の勤務開始の連絡を上司に送付する
+        # 開始連絡：本日の勤務開始連絡を上司に送付する
         elif functionSel == 2:
-            sendWorkStartMail()
+            sendWorkStartEndMail(SUBJECT_SCHEDULE_TAG, SUBJECT_WORKSTART_TAG)
 
-        # 終了連絡
+        # 終了連絡：本日の勤務終了連絡を上司に送付する
         elif functionSel == 3:
-            pass
+            sendWorkStartEndMail(SUBJECT_WORKSTART_TAG, SUBJECT_WORKEND_TAG)
 
         # Unexpected input
         else:
             print('数字1、2または3をご入力ください。')
-            
-    # except:
-    #     print('数字1、2または3をご入力ください。')
 
-# os.system('pause')
+        print('メールを作成しました。')
+    except:
+        print('数字1、2または3をご入力ください。')
+
+os.system('pause')
