@@ -92,7 +92,7 @@ def send_schedule():
     local_body_list.append(Configration.my_name + BODY_SCHEDULE)
     local_body_list.append(BODY_BORDER)
     for tmp_item in local_cal_items:
-        tmp_subject = tmp_item.subject
+        tmp_subject = tmp_item.Subject
         tmp_time_str = "{0}～{1}".format(tmp_item.start.strftime("%H:%M"), tmp_item.end.strftime("%H:%M"))
         local_body_list.append(tmp_subject + ' ' + tmp_time_str)
 
@@ -130,11 +130,10 @@ def reply_mail(par_tag_for_search, par_tag_for_title):
     for tmp_sent_item in local_sent_items:
         if local_subject_to_find in tmp_sent_item.Subject:
             local_is_found = True
+            local_reply_mail = tmp_sent_item.Reply()
             for tmp_received_item in local_received_items:
                 if local_subject_to_find in tmp_received_item.Subject:
-                    if tmp_sent_item.SentOn > tmp_received_item.ReceivedTime:
-                        local_reply_mail = tmp_sent_item.Reply()
-                    else:
+                    if tmp_received_item.ReceivedTime > tmp_sent_item.SentOn:
                         local_reply_mail = tmp_received_item.Reply()
 
                     break
@@ -142,6 +141,7 @@ def reply_mail(par_tag_for_search, par_tag_for_title):
             break
 
     if local_is_found == True:
+        local_reply_mail.BodyFormat = BODY_FORMAT
         local_reply_mail.Subject = par_tag_for_title + Configration.my_name + ' ' + local_work_date.strftime("%m/%d")
         local_body_list.append(Configration.supervisor_name + BODY_PERSONAL_TITLE)
         local_body_list.append(Configration.my_name + BODY_WORKSTART)
