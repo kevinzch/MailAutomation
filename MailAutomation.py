@@ -13,6 +13,7 @@ END_TIME_STR   = '22:00:00'
 # Reference: https://docs.microsoft.com/en-us/office/vba/api/outlook.oldefaultfolders
 FOLDER_CALENDAR = 9
 FOLDER_SENTMAIL = 5
+FOLDER_INBOX = 6
 
 # Reference: https://docs.microsoft.com/en-us/office/vba/api/outlook.olbodyformat
 # 1: plain, 2: HTML, 3: richtext
@@ -29,109 +30,119 @@ BODY_BORDER = '-----------------------------------------------------------------
 BODY_SIGNOFF = '以上、よろしくお願いいたします。'
 
 class Configration:
-    configFileName = 'config.json'
+    config_file_name = 'config.json'
 
     # application is a frozen exe
     if getattr(sys, 'frozen', False):
-        appPath = os.path.dirname(sys.executable)
+        app_path = os.path.dirname(sys.executable)
     # application is a script file
     else:
-        appPath = os.path.dirname(__file__)
+        app_path = os.path.dirname(__file__)
 
-    configFilePath = os.path.join(appPath, configFileName)
+    config_file_path = os.path.join(app_path, config_file_name)
 
-    with open(configFilePath, encoding='utf-8') as configFile:
-        configDict = json.load(configFile)
-        toAddr = configDict['To']
-        ccAddr = configDict['Cc']
-        selfName = configDict['SelfName']
-        supervisorName = configDict['SupervisorName']
+    with open(config_file_path, encoding='utf-8') as config_file:
+        config_dict = json.load(config_file)
+        to_address = config_dict['To']
+        cc_address = config_dict['Cc']
+        my_name = config_dict['MyName']
+        supervisor_name = config_dict['SupervisorName']
 
 class Outlook:
-    outlookApp = win32com.client.Dispatch("Outlook.Application")
-    namespace = outlookApp.GetNamespace("MAPI")
-    calender = namespace.GetDefaultFolder(FOLDER_CALENDAR).Items
-    sentMail = namespace.GetDefaultFolder(FOLDER_SENTMAIL).Items
+    outlook_app = win32com.client.Dispatch("Outlook.Application")
+    mapi_namespace = outlook_app.GetNamespace("MAPI")
+    calender_items = mapi_namespace.GetDefaultFolder(FOLDER_CALENDAR).Items
+    sent_items = mapi_namespace.GetDefaultFolder(FOLDER_SENTMAIL).Items
+    received_items = mapi_namespace.GetDefaultFolder(FOLDER_INBOX).Items
 
-def sendSchedule():
+def send_schedule():
     # 勤務予定日は翌日なので、翌日の日付を取得
-    tmpWorkDate = datetime.today().date() + timedelta(1)
-    tmpStartTime = time.fromisoformat(START_TIME_STR)
-    tmpStartDateTime = datetime.combine(tmpWorkDate, tmpStartTime)
-    tmpEndTime = time.fromisoformat(END_TIME_STR)
-    tmpEndDateTime = datetime.combine(tmpWorkDate, tmpEndTime)
+    local_work_date = datetime.today().date() + timedelta(1)
+    local_start_time = time.fromisoformat(START_TIME_STR)
+    local_start_datetime = datetime.combine(local_work_date, local_start_time)
+    local_end_time = time.fromisoformat(END_TIME_STR)
+    local_end_datetime = datetime.combine(local_work_date, local_end_time)
 
-    tmpCalItems = Outlook.calender
-    tmpCalItems.IncludeRecurrences = True
-    tmpCalItems.Sort("[Start]")
+    local_cal_items = Outlook.calender_items
+    local_cal_items.IncludeRecurrences = True
+    local_cal_items.Sort("[Start]")
 
-    tmpRestriction = "[Start] >= '" + tmpStartDateTime.strftime("%Y-%m-%d %H:%M") + "' And [End] <= '" + tmpEndDateTime.strftime("%Y-%m-%d %H:%M") + "'"
-    tmpCalItems = tmpCalItems.Restrict(tmpRestriction)
+    local_restriction = "[Start] >= '" + local_start_datetime.strftime("%Y-%m-%d %H:%M") + "' And [End] <= '" + local_end_datetime.strftime("%Y-%m-%d %H:%M") + "'"
+    local_cal_items = local_cal_items.Restrict(local_restriction)
 
-    tmpBodyList = []
-    tmpBodyList.append(Configration.supervisorName + BODY_PERSONAL_TITLE)
-    tmpBodyList.append(Configration.selfName + BODY_SCHEDULE)
-    tmpBodyList.append(BODY_BORDER)
-    for tmpItem in tmpCalItems:
-        tmpSubjectStr = tmpItem.subject
-        tmpTimeStr = "{0}～{1}".format(tmpItem.start.strftime("%H:%M"), tmpItem.end.strftime("%H:%M"))
-        tmpBodyList.append(tmpSubjectStr + ' ' + tmpTimeStr)
+    local_body_list = []
+    local_body_list.append(Configration.supervisor_name + BODY_PERSONAL_TITLE)
+    local_body_list.append(Configration.my_name + BODY_SCHEDULE)
+    local_body_list.append(BODY_BORDER)
+    for tmp_item in local_cal_items:
+        tmp_subject = tmp_item.subject
+        tmp_time_str = "{0}～{1}".format(tmp_item.start.strftime("%H:%M"), tmp_item.end.strftime("%H:%M"))
+        local_body_list.append(tmp_subject + ' ' + tmp_time_str)
 
-    tmpBodyList.append(BODY_BORDER + '\n')
-    tmpBodyList.append(BODY_SIGNOFF)
+    local_body_list.append(BODY_BORDER + '\n')
+    local_body_list.append(BODY_SIGNOFF)
 
-    tmpMailBody = '\n'.join(tmpBodyList)
+    local_mailbody = '\n'.join(local_body_list)
 
-    tmpNewMail = Outlook.outlookApp.CreateItem(0)
-    tmpNewMail.BodyFormat = BODY_FORMAT
-    tmpNewMail.To = Configration.toAddr
-    tmpNewMail.CC = Configration.ccAddr
-    tmpNewMail.Subject = SUBJECT_SCHEDULE_TAG + Configration.selfName + " " + tmpWorkDate.strftime("%m/%d")
-    tmpNewMail.Body = tmpMailBody
-    tmpNewMail.Display()
+    local_new_mail = Outlook.outlook_app.CreateItem(0)
+    local_new_mail.BodyFormat = BODY_FORMAT
+    local_new_mail.To = Configration.to_address
+    local_new_mail.CC = Configration.cc_address
+    local_new_mail.Subject = SUBJECT_SCHEDULE_TAG + Configration.my_name + ' ' + local_work_date.strftime("%m/%d")
+    local_new_mail.Body = local_mailbody
+    local_new_mail.Display()
 
-def sendWorkStartEndMail(parTagToSearch, parTagForTitle):
+def reply_mail(par_tag_for_search, par_tag_for_title):
     # 当日の連絡なので、当日の日付を取得
-    tmpWorkDate = datetime.today().date()
-    tmpSubjectToFind = parTagToSearch + Configration.selfName + " " + tmpWorkDate.strftime("%m/%d")
-    tmpSentMailItems = Outlook.sentMail
+    local_work_date = datetime.today().date()
+    local_subject_to_find = par_tag_for_search + Configration.my_name + ' ' + local_work_date.strftime("%m/%d")
 
-    tmpIsMailFound = False
+    local_sent__items = Outlook.sent_items
+    # 最新の送信メールから探す
+    local_sent__items.Sort('[SentOn]', True)
 
-    print(tmpSubjectToFind)
+    local_received_items = Outlook.received_items
+    # 最新の受信メールから探す
+    local_received_items.Sort('[ReceivedTime]', True)
 
-    for tmpItem in tmpSentMailItems:
-        if tmpSubjectToFind in tmpItem.Subject:
-            tmpReplyMail = tmpItem.Reply()
-            tmpReplyMail.Subject = parTagForTitle + Configration.selfName + " " + tmpWorkDate.strftime("%m/%d")
-            tmpBodyList = []
-            tmpBodyList.append(Configration.supervisorName + BODY_PERSONAL_TITLE)
-            tmpBodyList.append(Configration.selfName + BODY_WORKSTART)
-            tmpBodyList.append(BODY_SIGNOFF)
-            tmpReplyMail.Body = '\n'.join(tmpBodyList) + tmpReplyMail.Body
-            tmpReplyMail.To = Configration.toAddr
-            tmpReplyMail.CC = Configration.ccAddr
-            tmpReplyMail.Display()
-            tmpIsMailFound = True
+    local_is_found = False
 
-    if tmpIsMailFound == False:
-        print(parTagToSearch + 'のメールが見つかりません。')
+    print(local_subject_to_find)
+
+    for tmp_item in local_sent__items:
+        if local_subject_to_find in tmp_item.Subject:
+            tmp_reply_mail = tmp_item.Reply()
+            tmp_reply_mail.Subject = par_tag_for_title + Configration.my_name + ' ' + local_work_date.strftime("%m/%d")
+            tmp_body_list = []
+            tmp_body_list.append(Configration.supervisor_name + BODY_PERSONAL_TITLE)
+            tmp_body_list.append(Configration.my_name + BODY_WORKSTART)
+            tmp_body_list.append(BODY_SIGNOFF)
+            tmp_reply_mail.Body = '\n'.join(tmp_body_list) + tmp_reply_mail.Body
+            tmp_reply_mail.To = Configration.to_address
+            tmp_reply_mail.CC = Configration.cc_address
+            tmp_reply_mail.Display()
+            local_is_found = True
+
+            break
+
+    if local_is_found == False:
+        print(par_tag_for_search + 'のメールが見つかりません。')
 
 if __name__ == "__main__":
     try:
-        functionSel = int(input('機能をご選択ください(1:予定連絡、2:開始連絡、3:終了連絡)：'))
+        function_selection = int(input('機能をご選択ください(1:予定連絡、2:開始連絡、3:終了連絡)：'))
 
         # 予定連絡：翌日の予定を上司に送付する
-        if functionSel == 1:            
-            sendSchedule()
+        if function_selection == 1:
+            send_schedule()
 
         # 開始連絡：本日の勤務開始連絡を上司に送付する
-        elif functionSel == 2:
-            sendWorkStartEndMail(SUBJECT_SCHEDULE_TAG, SUBJECT_WORKSTART_TAG)
+        elif function_selection == 2:
+            reply_mail(SUBJECT_SCHEDULE_TAG, SUBJECT_WORKSTART_TAG)
 
         # 終了連絡：本日の勤務終了連絡を上司に送付する
-        elif functionSel == 3:
-            sendWorkStartEndMail(SUBJECT_WORKSTART_TAG, SUBJECT_WORKEND_TAG)
+        elif function_selection == 3:
+            reply_mail(SUBJECT_WORKSTART_TAG, SUBJECT_WORKEND_TAG)
 
         # Unexpected input
         else:

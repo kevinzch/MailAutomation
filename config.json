@@ -1,6 +1,6 @@
 {
     "To": "testTo.com",
     "Cc": "TestCC1.com;TestCC2.com;TestCC3.com;TestCC4.com",
-    "SelfName": "Kevin",
+    "MyName": "Kevin",
     "SupervisorName": "Big Boss"
 }
