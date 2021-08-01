@@ -14,6 +14,7 @@ END_TIME_STR   = '22:00:00'
 FOLDER_CALENDAR = 9
 FOLDER_SENTMAIL = 5
 FOLDER_INBOX = 6
+FOLDER_ROOT = 1
 
 # Reference: https://docs.microsoft.com/en-us/office/vba/api/outlook.olbodyformat
 # 1: plain, 2: HTML, 3: richtext
@@ -31,7 +32,22 @@ BODY_SIGNOFF = '以上、よろしくお願いいたします。'
 
 class Configration:
     config_file_name = 'config.json'
+    to_address = ''
+    cc_address = ''
+    my_name = ''
+    supervisor_name = ''
+    target_folder_name = ''
 
+class Outlook:
+    outlook_app = win32com.client.Dispatch("Outlook.Application")
+    mapi_namespace = outlook_app.GetNamespace("MAPI")
+    calender_items = mapi_namespace.GetDefaultFolder(FOLDER_CALENDAR).Items
+    sentmail = mapi_namespace.GetDefaultFolder(FOLDER_SENTMAIL)
+    inbox = mapi_namespace.GetDefaultFolder(FOLDER_INBOX)
+    root_folder = mapi_namespace.Folders.Item(FOLDER_ROOT)
+    target_folder = None
+
+def get_configration():
     # application is a frozen exe
     if getattr(sys, 'frozen', False):
         app_path = os.path.dirname(sys.executable)
@@ -39,21 +55,22 @@ class Configration:
     else:
         app_path = os.path.dirname(__file__)
 
-    config_file_path = os.path.join(app_path, config_file_name)
+    config_file_path = os.path.join(app_path, Configration.config_file_name)
 
     with open(config_file_path, encoding='utf-8') as config_file:
         config_dict = json.load(config_file)
-        to_address = config_dict['To']
-        cc_address = config_dict['Cc']
-        my_name = config_dict['MyName']
-        supervisor_name = config_dict['SupervisorName']
+        Configration.to_address = config_dict['To']
+        Configration.cc_address = config_dict['Cc']
+        Configration.my_name = config_dict['MyName']
+        Configration.supervisor_name = config_dict['SupervisorName']
+        Configration.target_folder_name = config_dict['FolderName']
 
-class Outlook:
-    outlook_app = win32com.client.Dispatch("Outlook.Application")
-    mapi_namespace = outlook_app.GetNamespace("MAPI")
-    calender_items = mapi_namespace.GetDefaultFolder(FOLDER_CALENDAR).Items
-    sent_items = mapi_namespace.GetDefaultFolder(FOLDER_SENTMAIL).Items
-    received_items = mapi_namespace.GetDefaultFolder(FOLDER_INBOX).Items
+def traverse_folder(par_parent_folder):
+    try:
+        Outlook.target_folder = par_parent_folder.Folders[Configration.target_folder_name]
+    except:
+        for subfolder in par_parent_folder.Folders:
+            traverse_folder(subfolder)
 
 def send_schedule():
     # 勤務予定日は翌日なので、翌日の日付を取得
@@ -97,40 +114,50 @@ def reply_mail(par_tag_for_search, par_tag_for_title):
     local_work_date = datetime.today().date()
     local_subject_to_find = par_tag_for_search + Configration.my_name + ' ' + local_work_date.strftime("%m/%d")
 
-    local_sent__items = Outlook.sent_items
+    local_sent_items = Outlook.sentmail.Items
     # 最新の送信メールから探す
-    local_sent__items.Sort('[SentOn]', True)
+    local_sent_items.Sort('[SentOn]', True)
 
-    local_received_items = Outlook.received_items
+    local_received_items = Outlook.target_folder.Items
     # 最新の受信メールから探す
     local_received_items.Sort('[ReceivedTime]', True)
 
     local_is_found = False
 
-    print(local_subject_to_find)
+    local_reply_mail = None
+    local_body_list = []
 
-    for tmp_item in local_sent__items:
-        if local_subject_to_find in tmp_item.Subject:
-            tmp_reply_mail = tmp_item.Reply()
-            tmp_reply_mail.Subject = par_tag_for_title + Configration.my_name + ' ' + local_work_date.strftime("%m/%d")
-            tmp_body_list = []
-            tmp_body_list.append(Configration.supervisor_name + BODY_PERSONAL_TITLE)
-            tmp_body_list.append(Configration.my_name + BODY_WORKSTART)
-            tmp_body_list.append(BODY_SIGNOFF)
-            tmp_reply_mail.Body = '\n'.join(tmp_body_list) + tmp_reply_mail.Body
-            tmp_reply_mail.To = Configration.to_address
-            tmp_reply_mail.CC = Configration.cc_address
-            tmp_reply_mail.Display()
+    for tmp_sent_item in local_sent_items:
+        if local_subject_to_find in tmp_sent_item.Subject:
             local_is_found = True
+            for tmp_received_item in local_received_items:
+                if local_subject_to_find in tmp_received_item.Subject:
+                    if tmp_sent_item.SentOn > tmp_received_item.ReceivedTime:
+                        local_reply_mail = tmp_sent_item.Reply()
+                    else:
+                        local_reply_mail = tmp_received_item.Reply()
+
+                    break
 
             break
 
-    if local_is_found == False:
+    if local_is_found == True:
+        local_reply_mail.Subject = par_tag_for_title + Configration.my_name + ' ' + local_work_date.strftime("%m/%d")
+        local_body_list.append(Configration.supervisor_name + BODY_PERSONAL_TITLE)
+        local_body_list.append(Configration.my_name + BODY_WORKSTART)
+        local_body_list.append(BODY_SIGNOFF)
+        local_reply_mail.Body = '\n'.join(local_body_list) + local_reply_mail.Body
+        local_reply_mail.To = Configration.to_address
+        local_reply_mail.CC = Configration.cc_address
+        local_reply_mail.Display()
+    else:
         print(par_tag_for_search + 'のメールが見つかりません。')
 
 if __name__ == "__main__":
     try:
         function_selection = int(input('機能をご選択ください(1:予定連絡、2:開始連絡、3:終了連絡)：'))
+        get_configration()
+        traverse_folder(Outlook.root_folder)
 
         # 予定連絡：翌日の予定を上司に送付する
         if function_selection == 1:

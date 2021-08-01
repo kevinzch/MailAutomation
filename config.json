@@ -2,5 +2,6 @@
     "To": "testTo.com",
     "Cc": "TestCC1.com;TestCC2.com;TestCC3.com;TestCC4.com",
     "MyName": "Kevin",
-    "SupervisorName": "Big Boss"
+    "SupervisorName": "Big Boss",
+    "FolderName": "23234df"
 }
