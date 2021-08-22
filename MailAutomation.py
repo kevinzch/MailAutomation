@@ -24,11 +24,16 @@ SUBJECT_SCHEDULE_TAG = '【在宅勤務予定】'
 SUBJECT_WORKSTART_TAG = '【在宅勤務開始】'
 SUBJECT_WORKEND_TAG = '【在宅勤務終了】'
 
-BODY_PERSONAL_TITLE = 'さん\n'
-BODY_SCHEDULE = 'です。\n明日下記予定で在宅勤務いたします。\n'
-BODY_WORKSTART = 'です。\n本日在宅勤務開始します。\n'
+BODY_PERSONAL_TITLE = 'さん\r\n'
+BODY_SCHEDULE = 'です。\r\n明日下記予定で在宅勤務いたします。\r\n'
+BODY_WORKSTART = 'です。\r\n本日在宅勤務開始します。\r\n'
 BODY_BORDER = '------------------------------------------------------------------'
-BODY_SIGNOFF = '以上、よろしくお願いいたします。'
+BODY_SIGNOFF = '以上、よろしくお願いいたします。\r\n'
+
+# String used for locating reply mail body.
+# Considering user signature may also include undersocres so use two lines to locate.
+# 45 underscores
+START_OF_REPLY_MAIL_BODY = '_____________________________________________\r\nFrom:'
 
 class Configration:
     config_file_name = 'config.json'
@@ -96,10 +101,10 @@ def send_schedule():
         tmp_time_str = "{0}～{1}".format(tmp_item.start.strftime("%H:%M"), tmp_item.end.strftime("%H:%M"))
         local_body_list.append(tmp_time_str + ' ' + tmp_subject)
 
-    local_body_list.append(BODY_BORDER + '\n')
+    local_body_list.append(BODY_BORDER + '\r\n')
     local_body_list.append(BODY_SIGNOFF)
 
-    local_mailbody = '\n'.join(local_body_list)
+    local_mailbody = '\r\n'.join(local_body_list)
 
     local_new_mail = Outlook.outlook_app.CreateItem(0)
     local_new_mail.BodyFormat = BODY_FORMAT
@@ -110,6 +115,12 @@ def send_schedule():
     local_new_mail.Display()
 
 def reply_mail(par_tag_for_search, par_tag_for_title):
+    local_is_found = False
+    local_reply_mail = None
+    local_body_list = []
+    local_body_string = ''
+    local_body_without_signature = ''
+
     # 当日の連絡なので、当日の日付を取得
     local_work_date = datetime.today().date()
     local_subject_to_find = par_tag_for_search + Configration.my_name + ' ' + local_work_date.strftime("%m/%d")
@@ -122,15 +133,20 @@ def reply_mail(par_tag_for_search, par_tag_for_title):
     # 最新の受信メールから探す
     local_received_items.Sort('[ReceivedTime]', True)
 
-    local_is_found = False
-
-    local_reply_mail = None
-    local_body_list = []
-
+    # 返信用のメールを探す
     for tmp_sent_item in local_sent_items:
         if local_subject_to_find in tmp_sent_item.Subject:
             local_is_found = True
             local_reply_mail = tmp_sent_item.Reply()
+
+            local_body_string = local_reply_mail.Body
+            # Get rid of user signature
+            print(local_body_string)
+            # Locate the start of reply mail and get all the string from start to the end.
+            local_body_without_signature = local_body_string[local_body_string.index(START_OF_REPLY_MAIL_BODY):]
+            # Replace original mail body with a non-signature version
+            local_reply_mail.Body = local_body_without_signature
+
             for tmp_received_item in local_received_items:
                 if local_subject_to_find in tmp_received_item.Subject:
                     if tmp_received_item.ReceivedTime > tmp_sent_item.SentOn:
@@ -146,7 +162,7 @@ def reply_mail(par_tag_for_search, par_tag_for_title):
         local_body_list.append(Configration.supervisor_name + BODY_PERSONAL_TITLE)
         local_body_list.append(Configration.my_name + BODY_WORKSTART)
         local_body_list.append(BODY_SIGNOFF)
-        local_reply_mail.Body = '\n'.join(local_body_list) + local_reply_mail.Body
+        local_reply_mail.Body = '\r\n'.join(local_body_list) + local_reply_mail.Body
         local_reply_mail.To = Configration.to_address
         local_reply_mail.CC = Configration.cc_address
         local_reply_mail.Display()
