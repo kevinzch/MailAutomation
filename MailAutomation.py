@@ -94,7 +94,7 @@ def send_schedule():
     for tmp_item in local_cal_items:
         tmp_subject = tmp_item.Subject
         tmp_time_str = "{0}～{1}".format(tmp_item.start.strftime("%H:%M"), tmp_item.end.strftime("%H:%M"))
-        local_body_list.append(tmp_subject + ' ' + tmp_time_str)
+        local_body_list.append(tmp_time_str + ' ' + tmp_subject)
 
     local_body_list.append(BODY_BORDER + '\n')
     local_body_list.append(BODY_SIGNOFF)
