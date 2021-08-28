@@ -26,7 +26,8 @@ SUBJECT_WORKEND_TAG = '【在宅勤務終了】'
 
 BODY_PERSONAL_TITLE = 'さん\r\n'
 BODY_SCHEDULE = 'です。\r\n明日下記予定で在宅勤務いたします。\r\n'
-BODY_WORKSTART = 'です。\r\n本日在宅勤務開始します。\r\n'
+BODY_WORKSTARTS = 'です。\r\n\r\n本日在宅勤務開始します。\r\n'
+BODY_WORKENDS = 'です。\r\n\r\n本日在宅勤務終了します。\r\n'
 BODY_BORDER = '------------------------------------------------------------------'
 BODY_SIGNOFF = '以上、よろしくお願いいたします。\r\n'
 
@@ -114,7 +115,7 @@ def send_schedule():
     local_new_mail.Body = local_mailbody
     local_new_mail.Display()
 
-def reply_mail(par_tag_for_search, par_tag_for_title):
+def reply_mail(par_tag_for_search, par_tag_for_title, par_text_for_body):
     local_is_found = False
     local_reply_mail = None
     local_body_list = []
@@ -141,7 +142,6 @@ def reply_mail(par_tag_for_search, par_tag_for_title):
 
             local_body_string = local_reply_mail.Body
             # Get rid of user signature
-            print(local_body_string)
             # Locate the start of reply mail and get all the string from start to the end.
             local_body_without_signature = local_body_string[local_body_string.index(START_OF_REPLY_MAIL_BODY):]
             # Replace original mail body with a non-signature version
@@ -160,7 +160,7 @@ def reply_mail(par_tag_for_search, par_tag_for_title):
         local_reply_mail.BodyFormat = BODY_FORMAT
         local_reply_mail.Subject = par_tag_for_title + Configration.my_name + ' ' + local_work_date.strftime("%m/%d")
         local_body_list.append(Configration.supervisor_name + BODY_PERSONAL_TITLE)
-        local_body_list.append(Configration.my_name + BODY_WORKSTART)
+        local_body_list.append(Configration.my_name + par_text_for_body)
         local_body_list.append(BODY_SIGNOFF)
         local_reply_mail.Body = '\r\n'.join(local_body_list) + local_reply_mail.Body
         local_reply_mail.To = Configration.to_address
@@ -181,18 +181,18 @@ if __name__ == "__main__":
 
         # 開始連絡：本日の勤務開始連絡を上司に送付する
         elif function_selection == 2:
-            reply_mail(SUBJECT_SCHEDULE_TAG, SUBJECT_WORKSTART_TAG)
+            reply_mail(SUBJECT_SCHEDULE_TAG, SUBJECT_WORKSTART_TAG, BODY_WORKSTARTS)
 
         # 終了連絡：本日の勤務終了連絡を上司に送付する
         elif function_selection == 3:
-            reply_mail(SUBJECT_WORKSTART_TAG, SUBJECT_WORKEND_TAG)
+            reply_mail(SUBJECT_WORKSTART_TAG, SUBJECT_WORKEND_TAG, BODY_WORKENDS)
 
         # Unexpected input
         else:
             print('数字1、2または3をご入力ください。')
 
         print('メールを作成しました。')
-    except:
-        print('数字1、2または3をご入力ください。')
+    except Exception as e:
+        print(e)
 
 os.system('pause')
