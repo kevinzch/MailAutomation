@@ -114,6 +114,7 @@ def send_schedule():
     local_new_mail.Subject = SUBJECT_SCHEDULE_TAG + Configration.my_name + ' ' + local_work_date.strftime("%m/%d")
     local_new_mail.Body = local_mailbody
     local_new_mail.Display()
+    print('メールを作成しました。')
 
 def reply_mail(par_tag_for_search, par_tag_for_title, par_text_for_body):
     local_is_found = False
@@ -166,6 +167,7 @@ def reply_mail(par_tag_for_search, par_tag_for_title, par_text_for_body):
         local_reply_mail.To = Configration.to_address
         local_reply_mail.CC = Configration.cc_address
         local_reply_mail.Display()
+        print('メールを作成しました。')
     else:
         print(par_tag_for_search + 'のメールが見つかりません。')
 
@@ -195,7 +197,6 @@ if __name__ == "__main__":
         else:
             print('全角/半角数字1、2または3をご入力ください。')
 
-        print('メールを作成しました。')
     except Exception as e:
         print(e)
 
