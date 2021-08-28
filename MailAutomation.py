@@ -172,6 +172,10 @@ def reply_mail(par_tag_for_search, par_tag_for_title, par_text_for_body):
 if __name__ == "__main__":
     try:
         function_selection = int(input('機能をご選択ください(1:予定連絡、2:開始連絡、3:終了連絡)：'))
+    except:
+        print('全角/半角数字1、2または3をご入力ください。')
+
+    try:
         get_configration()
         traverse_folder(Outlook.root_folder)
 
@@ -189,7 +193,7 @@ if __name__ == "__main__":
 
         # Unexpected input
         else:
-            print('数字1、2または3をご入力ください。')
+            print('全角/半角数字1、2または3をご入力ください。')
 
         print('メールを作成しました。')
     except Exception as e:
