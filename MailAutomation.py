@@ -136,6 +136,7 @@ def send_schedule():
     print('メールを作成しました。')
 
 def reply_mail(par_tag_for_search, par_tag_for_title, par_text_for_body):
+    print('メール検索中。。。')
     local_is_found = False
     local_reply_mail = None
     local_body_list = []
