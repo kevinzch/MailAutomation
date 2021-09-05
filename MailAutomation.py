@@ -25,7 +25,8 @@ SUBJECT_WORKSTART_TAG = '【在宅勤務開始】'
 SUBJECT_WORKEND_TAG = '【在宅勤務終了】'
 
 BODY_PERSONAL_TITLE = 'さん\r\n'
-BODY_SCHEDULE = 'です。\r\n明日下記予定で在宅勤務いたします。\r\n'
+BODY_DESU = 'です。'
+BODY_SCHEDULE = 'に下記予定で在宅勤務いたします。\r\n'
 BODY_WORKSTARTS = 'です。\r\n\r\n本日在宅勤務開始します。\r\n'
 BODY_WORKENDS = 'です。\r\n\r\n本日在宅勤務終了します。\r\n'
 BODY_BORDER = '------------------------------------------------------------------'
@@ -95,11 +96,12 @@ def traverse_folder(par_parent_folder):
 
 def send_schedule():
     # 勤務予定日は翌日なので、翌日の日付を取得
-    local_work_date = datetime.today().date() + timedelta(Configuration.time_delta)
+    local_work_date = datetime.today().date() + timedelta(Configuration.time_delta)      # Format: yyyy-mm-dd
     local_start_time = time.fromisoformat(START_TIME_STR)
     local_start_datetime = datetime.combine(local_work_date, local_start_time)
     local_end_time = time.fromisoformat(END_TIME_STR)
     local_end_datetime = datetime.combine(local_work_date, local_end_time)
+    local_work_date_mm_dd = local_work_date.strftime("%#m/%#d")                          # Format: mm-dd without leading zero. Add a # between the % and the letter to remove leading zero.
 
     local_cal_items = Outlook.calender_items
     local_cal_items.IncludeRecurrences = True
@@ -108,9 +110,11 @@ def send_schedule():
     local_restriction = "[Start] >= '" + local_start_datetime.strftime("%Y-%m-%d %H:%M") + "' And [End] <= '" + local_end_datetime.strftime("%Y-%m-%d %H:%M") + "'"
     local_cal_items = local_cal_items.Restrict(local_restriction)
 
+    # Make mail body
     local_body_list = []
     local_body_list.append(Configuration.supervisor_name + BODY_PERSONAL_TITLE)
-    local_body_list.append(Configuration.my_name + BODY_SCHEDULE)
+    local_body_list.append(Configuration.my_name + BODY_DESU)
+    local_body_list.append('\r\n' + local_work_date_mm_dd + BODY_SCHEDULE)
     local_body_list.append(BODY_BORDER)
     for tmp_item in local_cal_items:
         tmp_subject = tmp_item.Subject
@@ -126,7 +130,7 @@ def send_schedule():
     local_new_mail.BodyFormat = BODY_FORMAT
     local_new_mail.To = Configuration.to_address
     local_new_mail.CC = Configuration.cc_address
-    local_new_mail.Subject = SUBJECT_SCHEDULE_TAG + Configuration.my_name + ' ' + local_work_date.strftime("%m/%d")
+    local_new_mail.Subject = SUBJECT_SCHEDULE_TAG + Configuration.my_name + ' ' + local_work_date_mm_dd
     local_new_mail.Body = local_mailbody
     local_new_mail.Display()
     print('メールを作成しました。')
