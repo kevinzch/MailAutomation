@@ -43,6 +43,7 @@ class Configuration:
     my_name = ''
     supervisor_name = ''
     target_folder_name = ''
+    time_delta = ''
 
 class Outlook:
     outlook_app = win32com.client.Dispatch("Outlook.Application")
@@ -70,6 +71,7 @@ def get_configurations():
         Configuration.my_name = config_dict['MyName']
         Configuration.supervisor_name = config_dict['SupervisorName']
         Configuration.target_folder_name = config_dict['FolderName']
+        Configuration.time_delta = int(config_dict['TimeDelta'])
 
 def traverse_folder(par_parent_folder):
     try:
@@ -80,7 +82,7 @@ def traverse_folder(par_parent_folder):
 
 def send_schedule():
     # 勤務予定日は翌日なので、翌日の日付を取得
-    local_work_date = datetime.today().date() + timedelta(1)
+    local_work_date = datetime.today().date() + timedelta(Configuration.time_delta)
     local_start_time = time.fromisoformat(START_TIME_STR)
     local_start_datetime = datetime.combine(local_work_date, local_start_time)
     local_end_time = time.fromisoformat(END_TIME_STR)

@@ -3,5 +3,6 @@
     "Cc": "TestCC1.com;TestCC2.com;TestCC3.com;TestCC4.com",
     "MyName": "Kevin",
     "SupervisorName": "Boss",
-    "FolderName": "Inbox"
+    "FolderName": "受信トレイ",
+    "TimeDelta": "1"
 }
