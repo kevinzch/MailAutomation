@@ -144,7 +144,8 @@ def reply_mail(par_tag_for_search, par_tag_for_title, par_text_for_body):
 
     # 当日の連絡なので、当日の日付を取得
     local_work_date = datetime.today().date()
-    local_subject_to_find = par_tag_for_search + Configuration.my_name + ' ' + local_work_date.strftime("%m/%d")
+    local_work_date_mm_dd = local_work_date.strftime("%#m/%#d")
+    local_subject_to_find = par_tag_for_search + Configuration.my_name + ' ' + local_work_date_mm_dd
 
     local_sent_items = Outlook.sentmail.Items
     # 最新の送信メールから探す
@@ -178,7 +179,7 @@ def reply_mail(par_tag_for_search, par_tag_for_title, par_text_for_body):
 
     if local_is_found == True:
         local_reply_mail.BodyFormat = BODY_FORMAT
-        local_reply_mail.Subject = par_tag_for_title + Configuration.my_name + ' ' + local_work_date.strftime("%m/%d")
+        local_reply_mail.Subject = par_tag_for_title + Configuration.my_name + ' ' + local_work_date_mm_dd
         local_body_list.append(Configuration.supervisor_name + BODY_TITLE_OF_HONOR)
         local_body_list.append(Configuration.my_name + par_text_for_body)
         local_body_list.append(BODY_SIGNOFF)
@@ -188,7 +189,7 @@ def reply_mail(par_tag_for_search, par_tag_for_title, par_text_for_body):
         local_reply_mail.Display()
         print('メールを作成しました。')
     else:
-        print(par_tag_for_search + 'のメールが見つかりません。')
+        print(local_subject_to_find + ' のメールが見つかりません。')
 
 if __name__ == "__main__":
     try:
