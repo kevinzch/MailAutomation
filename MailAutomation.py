@@ -18,7 +18,7 @@ FOLDER_ROOT = 1
 
 # Reference: https://docs.microsoft.com/en-us/office/vba/api/outlook.olbodyformat
 # 1: plain, 2: HTML, 3: richtext
-BODY_FORMAT = 3      
+BODY_FORMAT = 3
 
 SUBJECT_SCHEDULE_TAG = '【在宅勤務予定】'
 SUBJECT_WORKSTART_TAG = '【在宅勤務開始】'
@@ -36,7 +36,7 @@ BODY_SIGNOFF = '以上、よろしくお願いいたします。\r\n'
 # 45 underscores
 START_OF_REPLY_MAIL_BODY = '_____________________________________________\r\nFrom:'
 
-class Configration:
+class Configuration:
     config_file_name = 'config.json'
     to_address = ''
     cc_address = ''
@@ -53,7 +53,7 @@ class Outlook:
     root_folder = mapi_namespace.Folders.Item(FOLDER_ROOT)
     target_folder = None
 
-def get_configration():
+def get_configurations():
     # application is a frozen exe
     if getattr(sys, 'frozen', False):
         app_path = os.path.dirname(sys.executable)
@@ -61,19 +61,19 @@ def get_configration():
     else:
         app_path = os.path.dirname(__file__)
 
-    config_file_path = os.path.join(app_path, Configration.config_file_name)
+    config_file_path = os.path.join(app_path, Configuration.config_file_name)
 
     with open(config_file_path, encoding='utf-8') as config_file:
         config_dict = json.load(config_file)
-        Configration.to_address = config_dict['To']
-        Configration.cc_address = config_dict['Cc']
-        Configration.my_name = config_dict['MyName']
-        Configration.supervisor_name = config_dict['SupervisorName']
-        Configration.target_folder_name = config_dict['FolderName']
+        Configuration.to_address = config_dict['To']
+        Configuration.cc_address = config_dict['Cc']
+        Configuration.my_name = config_dict['MyName']
+        Configuration.supervisor_name = config_dict['SupervisorName']
+        Configuration.target_folder_name = config_dict['FolderName']
 
 def traverse_folder(par_parent_folder):
     try:
-        Outlook.target_folder = par_parent_folder.Folders[Configration.target_folder_name]
+        Outlook.target_folder = par_parent_folder.Folders[Configuration.target_folder_name]
     except:
         for subfolder in par_parent_folder.Folders:
             traverse_folder(subfolder)
@@ -94,8 +94,8 @@ def send_schedule():
     local_cal_items = local_cal_items.Restrict(local_restriction)
 
     local_body_list = []
-    local_body_list.append(Configration.supervisor_name + BODY_PERSONAL_TITLE)
-    local_body_list.append(Configration.my_name + BODY_SCHEDULE)
+    local_body_list.append(Configuration.supervisor_name + BODY_PERSONAL_TITLE)
+    local_body_list.append(Configuration.my_name + BODY_SCHEDULE)
     local_body_list.append(BODY_BORDER)
     for tmp_item in local_cal_items:
         tmp_subject = tmp_item.Subject
@@ -109,9 +109,9 @@ def send_schedule():
 
     local_new_mail = Outlook.outlook_app.CreateItem(0)
     local_new_mail.BodyFormat = BODY_FORMAT
-    local_new_mail.To = Configration.to_address
-    local_new_mail.CC = Configration.cc_address
-    local_new_mail.Subject = SUBJECT_SCHEDULE_TAG + Configration.my_name + ' ' + local_work_date.strftime("%m/%d")
+    local_new_mail.To = Configuration.to_address
+    local_new_mail.CC = Configuration.cc_address
+    local_new_mail.Subject = SUBJECT_SCHEDULE_TAG + Configuration.my_name + ' ' + local_work_date.strftime("%m/%d")
     local_new_mail.Body = local_mailbody
     local_new_mail.Display()
     print('メールを作成しました。')
@@ -125,7 +125,7 @@ def reply_mail(par_tag_for_search, par_tag_for_title, par_text_for_body):
 
     # 当日の連絡なので、当日の日付を取得
     local_work_date = datetime.today().date()
-    local_subject_to_find = par_tag_for_search + Configration.my_name + ' ' + local_work_date.strftime("%m/%d")
+    local_subject_to_find = par_tag_for_search + Configuration.my_name + ' ' + local_work_date.strftime("%m/%d")
 
     local_sent_items = Outlook.sentmail.Items
     # 最新の送信メールから探す
@@ -159,13 +159,13 @@ def reply_mail(par_tag_for_search, par_tag_for_title, par_text_for_body):
 
     if local_is_found == True:
         local_reply_mail.BodyFormat = BODY_FORMAT
-        local_reply_mail.Subject = par_tag_for_title + Configration.my_name + ' ' + local_work_date.strftime("%m/%d")
-        local_body_list.append(Configration.supervisor_name + BODY_PERSONAL_TITLE)
-        local_body_list.append(Configration.my_name + par_text_for_body)
+        local_reply_mail.Subject = par_tag_for_title + Configuration.my_name + ' ' + local_work_date.strftime("%m/%d")
+        local_body_list.append(Configuration.supervisor_name + BODY_PERSONAL_TITLE)
+        local_body_list.append(Configuration.my_name + par_text_for_body)
         local_body_list.append(BODY_SIGNOFF)
         local_reply_mail.Body = '\r\n'.join(local_body_list) + local_reply_mail.Body
-        local_reply_mail.To = Configration.to_address
-        local_reply_mail.CC = Configration.cc_address
+        local_reply_mail.To = Configuration.to_address
+        local_reply_mail.CC = Configuration.cc_address
         local_reply_mail.Display()
         print('メールを作成しました。')
     else:
@@ -178,7 +178,7 @@ if __name__ == "__main__":
         print('全角/半角数字1、2または3をご入力ください。')
 
     try:
-        get_configration()
+        get_configurations()
         traverse_folder(Outlook.root_folder)
 
         # 予定連絡：翌日の予定を上司に送付する
