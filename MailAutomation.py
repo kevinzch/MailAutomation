@@ -38,6 +38,8 @@ START_OF_REPLY_MAIL_BODY = '_____________________________________________\r\nFro
 
 class Configuration:
     config_file_name = 'config.json'
+
+    # Customizable variable
     to_address = ''
     cc_address = ''
     my_name = ''
@@ -48,10 +50,20 @@ class Configuration:
 class Outlook:
     outlook_app = win32com.client.Dispatch("Outlook.Application")
     mapi_namespace = outlook_app.GetNamespace("MAPI")
+
+    # Get all calendar items
     calender_items = mapi_namespace.GetDefaultFolder(FOLDER_CALENDAR).Items
+
+    # Set sentmail(folder)
     sentmail = mapi_namespace.GetDefaultFolder(FOLDER_SENTMAIL)
+
+    # Set Inbox
     inbox = mapi_namespace.GetDefaultFolder(FOLDER_INBOX)
+
+    # Set root folder
     root_folder = mapi_namespace.Folders.Item(FOLDER_ROOT)
+
+    # Target folder is not available by default
     target_folder = None
 
 def get_configurations():
@@ -64,6 +76,7 @@ def get_configurations():
 
     config_file_path = os.path.join(app_path, Configuration.config_file_name)
 
+    # Load customizable variable from configuration file
     with open(config_file_path, encoding='utf-8') as config_file:
         config_dict = json.load(config_file)
         Configuration.to_address = config_dict['To']
