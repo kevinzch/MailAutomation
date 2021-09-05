@@ -24,7 +24,7 @@ SUBJECT_SCHEDULE_TAG = '【在宅勤務予定】'
 SUBJECT_WORKSTART_TAG = '【在宅勤務開始】'
 SUBJECT_WORKEND_TAG = '【在宅勤務終了】'
 
-BODY_PERSONAL_TITLE = 'さん\r\n'
+BODY_TITLE_OF_HONOR = 'さん\r\n'
 BODY_DESU = 'です。'
 BODY_SCHEDULE = 'に下記予定で在宅勤務いたします。\r\n'
 BODY_WORKSTARTS = 'です。\r\n\r\n本日在宅勤務開始します。\r\n'
@@ -112,7 +112,7 @@ def send_schedule():
 
     # Make mail body
     local_body_list = []
-    local_body_list.append(Configuration.supervisor_name + BODY_PERSONAL_TITLE)
+    local_body_list.append(Configuration.supervisor_name + BODY_TITLE_OF_HONOR)
     local_body_list.append(Configuration.my_name + BODY_DESU)
     local_body_list.append('\r\n' + local_work_date_mm_dd + BODY_SCHEDULE)
     local_body_list.append(BODY_BORDER)
@@ -179,7 +179,7 @@ def reply_mail(par_tag_for_search, par_tag_for_title, par_text_for_body):
     if local_is_found == True:
         local_reply_mail.BodyFormat = BODY_FORMAT
         local_reply_mail.Subject = par_tag_for_title + Configuration.my_name + ' ' + local_work_date.strftime("%m/%d")
-        local_body_list.append(Configuration.supervisor_name + BODY_PERSONAL_TITLE)
+        local_body_list.append(Configuration.supervisor_name + BODY_TITLE_OF_HONOR)
         local_body_list.append(Configuration.my_name + par_text_for_body)
         local_body_list.append(BODY_SIGNOFF)
         local_reply_mail.Body = '\r\n'.join(local_body_list) + local_reply_mail.Body
