@@ -85,7 +85,7 @@ def get_configurations():
         Configuration.my_name = config_dict['MyName']
         Configuration.supervisor_name = config_dict['SupervisorName']
         Configuration.target_folder_name = config_dict['FolderName']
-        Configuration.time_delta = int(config_dict['TimeDelta'])
+        Configuration.time_delta = 1
 
 def traverse_folder(par_parent_folder):
     try:
@@ -194,7 +194,8 @@ def reply_mail(par_tag_for_search, par_tag_for_title, par_text_for_body):
 
 if __name__ == "__main__":
     try:
-        function_selection = int(input('機能をご選択ください(1:予定連絡、2:開始連絡、3:終了連絡)：'))
+        # If an empty input is given, end script and show a message
+        function_selection = int(input('機能をご選択ください(1:予定連絡、2:開始連絡、3:終了連絡)：') or 0)
     except:
         print('全角/半角数字1、2または3をご入力ください。')
 
@@ -204,6 +205,7 @@ if __name__ == "__main__":
 
         # 予定連絡：翌日の予定を上司に送付する
         if function_selection == 1:
+            Configuration.time_delta = int(input('何日後の予定表を送りたいですか？(何も入力しない場合：1)：') or 1)
             send_schedule()
 
         # 開始連絡：本日の勤務開始連絡を上司に送付する
