@@ -85,7 +85,7 @@ def get_configurations():
         Configuration.my_name = config_dict['MyName']
         Configuration.supervisor_name = config_dict['SupervisorName']
         Configuration.target_folder_name = config_dict['FolderName']
-        Configuration.time_delta = 1
+        Configuration.time_delta = 0
 
 def traverse_folder(par_parent_folder):
     try:
@@ -95,7 +95,7 @@ def traverse_folder(par_parent_folder):
             traverse_folder(subfolder)
 
 def send_schedule():
-    #勤務予定日は翌日なので、翌日の日付を取得
+    #Get date of specified day
     local_work_date = datetime.today().date() + timedelta(Configuration.time_delta)      #Format: yyyy-mm-dd
     local_start_time = time.fromisoformat(START_TIME_STR)
     local_start_datetime = datetime.combine(local_work_date, local_start_time)
@@ -116,10 +116,16 @@ def send_schedule():
     local_body_list.append(Configuration.my_name + BODY_DESU)
     local_body_list.append('\r\n' + local_work_date_mm_dd + BODY_SCHEDULE)
     local_body_list.append(BODY_BORDER)
+
     for tmp_item in local_cal_items:
-        tmp_subject = tmp_item.Subject
-        tmp_time_str = "{0}～{1}".format(tmp_item.start.strftime("%H:%M"), tmp_item.end.strftime("%H:%M"))
-        local_body_list.append(tmp_time_str + ' ' + tmp_subject)
+
+        if '#Exclude' not in tmp_item.Subject:
+            tmp_subject = tmp_item.Subject
+            tmp_time_str = "{0}～{1}".format(tmp_item.start.strftime("%H:%M"), tmp_item.end.strftime("%H:%M"))
+            local_body_list.append(tmp_time_str + ' ' + tmp_subject)
+
+        else:
+            pass
 
     local_body_list.append(BODY_BORDER + '\r\n')
     local_body_list.append(BODY_SIGNOFF)
@@ -237,16 +243,16 @@ if __name__ == "__main__":
         get_configurations()
         traverse_folder(Outlook.root_folder)
 
-        #予定連絡：翌日の予定を上司に送付する
+        #Send schedule
         if function_selection == 1:
             Configuration.time_delta = int(input('何日後の予定表を送りたいですか？(何も入力しない場合：1)：') or 1)
             send_schedule()
 
-        #開始連絡：本日の勤務開始連絡を上司に送付する
+        #Send mail to claim beginning of work
         elif function_selection == 2:
             reply_mail(SUBJECT_SCHEDULE_TAG, SUBJECT_WORKSTART_TAG, BODY_WORKSTARTS)
 
-        #終了連絡：本日の勤務終了連絡を上司に送付する
+        #Send mail to claim end of work
         elif function_selection == 3:
             reply_mail(SUBJECT_WORKSTART_TAG, SUBJECT_WORKEND_TAG, BODY_WORKENDS)
 
