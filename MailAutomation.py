@@ -34,9 +34,8 @@ BODY_BORDER = '-----------------------------------------------------------------
 BODY_SIGNOFF = '以上、よろしくお願いいたします。\r\n'
 
 #String used for locating reply mail body.
-#Considering user signature may also include undersocres so use two lines to locate.
-#45 underscores
-BEGINING_OF_REPLY_MAIL_BODY = '_____________________________________________'
+BEGINING_OF_REPLY_MAIL_BODY_JPN = '差出人'
+BEGINING_OF_REPLY_MAIL_BODY_ENG = 'From'
 
 class Configuration:
     config_file_name = 'config.json'
@@ -167,6 +166,7 @@ def reply_mail(par_tag_for_search, par_tag_for_title, par_text_for_body):
 
         if local_subject_to_find in tmp_sent_item.Subject:
             local_is_found = True
+            #tmp_sent_item.Bodyformat = BODY_FORMAT
             local_reply_mail = tmp_sent_item.Reply()
 
             #Search mail subject in received items
@@ -176,6 +176,7 @@ def reply_mail(par_tag_for_search, par_tag_for_title, par_text_for_body):
 
                     #Choose the latest mail
                     if tmp_received_item.ReceivedTime > tmp_sent_item.SentOn:
+                        #tmp_sent_item.Bodyformat = BODY_FORMAT
                         local_reply_mail = tmp_received_item.Reply()
 
                     else:
@@ -195,20 +196,31 @@ def reply_mail(par_tag_for_search, par_tag_for_title, par_text_for_body):
     local_body_string = local_reply_mail.Body
     #Delete user signature
     #Locate the beginning of reply mail text and get all strings
-    local_body_without_signature = local_body_string[local_body_string.index(BEGINING_OF_REPLY_MAIL_BODY):]
+    try:
+        local_body_without_signature = local_body_string[local_body_string.index(BEGINING_OF_REPLY_MAIL_BODY_ENG) - 1:]
+    except:
+        local_body_without_signature = local_body_string[local_body_string.index(BEGINING_OF_REPLY_MAIL_BODY_JPN) - 1:]
+
     #Replace original mail body with a non-signature version
     local_reply_mail.Body = local_body_without_signature
 
-
+    #If target mail is found, make reply mail
     if local_is_found == True:
         local_reply_mail.BodyFormat = BODY_FORMAT
+
+        #Make mail subject
         local_reply_mail.Subject = par_tag_for_title + Configuration.my_name + ' ' + local_work_date_mm_dd
+
+        #Make mail body
         local_body_list.append(Configuration.supervisor_name + BODY_TITLE_OF_HONOR)
         local_body_list.append(Configuration.my_name + par_text_for_body)
         local_body_list.append(BODY_SIGNOFF)
         local_reply_mail.Body = '\r\n'.join(local_body_list) + local_reply_mail.Body
+
+        #Add contacts
         local_reply_mail.To = Configuration.to_address
         local_reply_mail.CC = Configuration.cc_address
+
         local_reply_mail.Display()
         print('メールを作成しました。')
     else:
