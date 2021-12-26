@@ -32,12 +32,13 @@ BODY_DESU = 'です。'
 BODY_SCHEDULE = 'に下記予定で在宅勤務いたします。\r\n'
 BODY_WORKSTARTS = 'です。\r\n\r\n本日在宅勤務開始します。\r\n'
 BODY_WORKENDS = 'です。\r\n\r\n本日在宅勤務終了します。\r\n'
-BODY_BORDER = '------------------------------------------------------------------'
+BODY_SCHEDULE_BORDER = '------------------------------------------------------------------'
 BODY_SIGNOFF = '以上、よろしくお願いいたします。\r\n'
+BODY_MAIL_SPLITLINE = '_____________________________________________\r\n'
 
 #String used for locating reply mail body.
-BEGINNING_OF_REPLY_MAIL_BODY_JPN = '差出人'
-BEGINNING_OF_REPLY_MAIL_BODY_ENG = 'From'
+BEGINNING_OF_REPLY_MAIL_BODY_JPN = '差出人:'
+BEGINNING_OF_REPLY_MAIL_BODY_ENG = 'From:'
 
 class Configuration:
     config_file_name = 'config.json'
@@ -117,7 +118,7 @@ def send_schedule():
     local_body_list.append(Configuration.supervisor_name + BODY_TITLE_OF_HONOR)
     local_body_list.append(Configuration.my_name + BODY_DESU)
     local_body_list.append('\r\n' + local_work_date_mm_dd + BODY_SCHEDULE)
-    local_body_list.append(BODY_BORDER)
+    local_body_list.append(BODY_SCHEDULE_BORDER)
 
     for tmp_item in local_cal_items:
 
@@ -129,7 +130,7 @@ def send_schedule():
         else:
             pass
 
-    local_body_list.append(BODY_BORDER + '\r\n')
+    local_body_list.append(BODY_SCHEDULE_BORDER + '\r\n')
     local_body_list.append(BODY_SIGNOFF)
 
     local_mailbody = '\r\n'.join(local_body_list)
@@ -205,9 +206,9 @@ def reply_mail(par_tag_for_search, par_tag_for_title, par_text_for_body):
     #Delete user signature
     #Locate the beginning of reply mail text and get all strings
     try:
-        local_body_without_signature = local_body_string[local_body_string.index(BEGINNING_OF_REPLY_MAIL_BODY_ENG) - 1:]
+        local_body_without_signature = BODY_MAIL_SPLITLINE + local_body_string[local_body_string.index(BEGINNING_OF_REPLY_MAIL_BODY_ENG):]
     except:
-        local_body_without_signature = local_body_string[local_body_string.index(BEGINNING_OF_REPLY_MAIL_BODY_JPN) - 1:]
+        local_body_without_signature = BODY_MAIL_SPLITLINE + local_body_string[local_body_string.index(BEGINNING_OF_REPLY_MAIL_BODY_JPN):]
 
     #Replace original mail body with a non-signature version
     local_reply_mail.Body = local_body_without_signature
@@ -237,7 +238,7 @@ def reply_mail(par_tag_for_search, par_tag_for_title, par_text_for_body):
 if __name__ == "__main__":
     try:
         #If an empty input is given, end script and show a message
-        function_selection = int(input('機能をご選択ください(1:予定連絡、2:開始連絡、3:終了連絡)：') or 0)
+        function_selection = int(input('機能を選択してください(1:予定連絡、2:開始連絡、3:終了連絡):') or 0)
     except:
         print('全角/半角数字1、2または3をご入力ください。')
 
@@ -247,7 +248,7 @@ if __name__ == "__main__":
 
         #Send schedule
         if function_selection == 1:
-            Configuration.time_delta = int(input('何日後の予定表を送りたいですか？(何も入力しない場合：1)：') or 1)
+            Configuration.time_delta = int(input('何日後の予定表を送りたいですか？(何も入力しない場合:1):') or 1)
             send_schedule()
 
         #Send mail to claim beginning of work
