@@ -34,8 +34,8 @@ BODY_BORDER = '-----------------------------------------------------------------
 BODY_SIGNOFF = '以上、よろしくお願いいたします。\r\n'
 
 #String used for locating reply mail body.
-BEGINING_OF_REPLY_MAIL_BODY_JPN = '差出人'
-BEGINING_OF_REPLY_MAIL_BODY_ENG = 'From'
+BEGINNING_OF_REPLY_MAIL_BODY_JPN = '差出人'
+BEGINNING_OF_REPLY_MAIL_BODY_ENG = 'From'
 
 class Configuration:
     config_file_name = 'config.json'
@@ -203,9 +203,9 @@ def reply_mail(par_tag_for_search, par_tag_for_title, par_text_for_body):
     #Delete user signature
     #Locate the beginning of reply mail text and get all strings
     try:
-        local_body_without_signature = local_body_string[local_body_string.index(BEGINING_OF_REPLY_MAIL_BODY_ENG) - 1:]
+        local_body_without_signature = local_body_string[local_body_string.index(BEGINNING_OF_REPLY_MAIL_BODY_ENG) - 1:]
     except:
-        local_body_without_signature = local_body_string[local_body_string.index(BEGINING_OF_REPLY_MAIL_BODY_JPN) - 1:]
+        local_body_without_signature = local_body_string[local_body_string.index(BEGINNING_OF_REPLY_MAIL_BODY_JPN) - 1:]
 
     #Replace original mail body with a non-signature version
     local_reply_mail.Body = local_body_without_signature
