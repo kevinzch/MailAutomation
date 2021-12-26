@@ -34,7 +34,7 @@ BODY_WORKSTARTS = 'です。\r\n\r\n本日在宅勤務開始します。\r\n'
 BODY_WORKENDS = 'です。\r\n\r\n本日在宅勤務終了します。\r\n'
 BODY_SCHEDULE_BORDER = '------------------------------------------------------------------'
 BODY_SIGNOFF = '以上、よろしくお願いいたします。\r\n'
-BODY_MAIL_SPLITLINE = '_____________________________________________\r\n'
+BODY_MAIL_SPLITLINE = '_____________________________________________\r\n' #45 underscores
 
 #String used for locating reply mail body.
 BEGINNING_OF_REPLY_MAIL_BODY_JPN = '差出人:'
@@ -50,6 +50,7 @@ class Configuration:
     supervisor_name = ''
     target_folder_name = ''
     time_delta = ''
+    time_now = ''
 
 class Outlook:
     outlook_app = win32com.client.Dispatch("Outlook.Application")
@@ -71,6 +72,10 @@ class Outlook:
     target_folder = None
 
 def get_configurations():
+
+    Configuration.time_delta = 0
+    Configuration.time_now = datetime.now()
+
     #If application is a frozen exe
     if getattr(sys, 'frozen', False):
         app_path = os.path.dirname(sys.executable)
@@ -88,7 +93,6 @@ def get_configurations():
         Configuration.my_name = config_dict['MyName']
         Configuration.supervisor_name = config_dict['SupervisorName']
         Configuration.target_folder_name = config_dict['FolderName']
-        Configuration.time_delta = 0
 
 def traverse_folder(par_parent_folder):
     try:
@@ -139,7 +143,11 @@ def send_schedule():
     local_new_mail.BodyFormat = BODY_FORMAT
     local_new_mail.To = Configuration.to_address
     local_new_mail.CC = Configuration.cc_address
+
+    #【在宅勤務予定】 + [My name] + ' ' + [date]
+    #e.g., 【在宅勤務予定】Kevin 12/26
     local_new_mail.Subject = SUBJECT_SCHEDULE_TAG + Configuration.my_name + ' ' + local_work_date_mm_dd
+
     local_new_mail.Body = local_mailbody
     local_new_mail.Display()
     print('メールを作成しました。')
@@ -218,7 +226,14 @@ def reply_mail(par_tag_for_search, par_tag_for_title, par_text_for_body):
         local_reply_mail.BodyFormat = BODY_FORMAT
 
         #Make mail subject
-        local_reply_mail.Subject = par_tag_for_title + Configuration.my_name + ' ' + local_work_date_mm_dd
+        if par_tag_for_title == SUBJECT_WORKSTART_TAG:
+            #【在宅勤務開始】 + [My name] + ' ' + [date] + ' ' + [workstart_time] + '~'
+            #e.g., 【在宅勤務開始】Kevin 12/26 8:00~
+            local_reply_mail.Subject = local_reply_mail.Subject[4:].replace(par_tag_for_search, par_tag_for_title) + ' ' + calculate_rounded_time(Configuration.time_now).strftime("%H:%M") + '~'
+        else:
+            #【在宅勤務終了】 + [My name] + ' ' + [date] + ' ' + [workstart_time] + '~' + '[workend_time]'
+            #e.g., 【在宅勤務終了】Kevin 12/26 8:00~17:00
+            local_reply_mail.Subject = local_reply_mail.Subject[4:].replace(par_tag_for_search, par_tag_for_title) + calculate_rounded_time(Configuration.time_now).strftime("%H:%M")
 
         #Make mail body
         local_body_list.append(Configuration.supervisor_name + BODY_TITLE_OF_HONOR)
@@ -234,6 +249,12 @@ def reply_mail(par_tag_for_search, par_tag_for_title, par_text_for_body):
         print('メールを作成しました。')
     else:
         print(local_subject_to_find + ' のメールが見つかりません。')
+
+#Round time down to the nearest 15 minutes
+def calculate_rounded_time(par_time_now):
+    delta = timedelta(minutes=15)
+    rounded_time = par_time_now - (par_time_now - datetime.min) % delta
+    return rounded_time
 
 if __name__ == "__main__":
     try:
