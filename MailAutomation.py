@@ -21,9 +21,11 @@ FOLDER_ROOT = 1
 #1: plain, 2: HTML, 3: richtext
 BODY_FORMAT = 3
 
+#Tags for searching items
 SUBJECT_SCHEDULE_TAG = '【在宅勤務予定】'
 SUBJECT_WORKSTART_TAG = '【在宅勤務開始】'
 SUBJECT_WORKEND_TAG = '【在宅勤務終了】'
+SUBJECT_EXCLUDE_TAG = '#EXCLUDE'
 
 BODY_TITLE_OF_HONOR = 'さん\r\n'
 BODY_DESU = 'です。'
@@ -119,7 +121,7 @@ def send_schedule():
 
     for tmp_item in local_cal_items:
 
-        if '#Exclude' not in tmp_item.Subject:
+        if SUBJECT_EXCLUDE_TAG not in tmp_item.Subject.upper():
             tmp_subject = tmp_item.Subject
             tmp_time_str = "{0}～{1}".format(tmp_item.start.strftime("%H:%M"), tmp_item.end.strftime("%H:%M"))
             local_body_list.append(tmp_time_str + ' ' + tmp_subject)
