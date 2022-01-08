@@ -209,20 +209,21 @@ def reply_mail(par_tag_for_search, par_tag_for_title, par_text_for_body):
         else:
             pass
 
-    #Get mail body
-    local_body_string = local_reply_mail.Body
-    #Delete user signature
-    #Locate the beginning of reply mail text and get all strings
-    try:
-        local_body_without_signature = BODY_MAIL_SPLITLINE + local_body_string[local_body_string.index(BEGINNING_OF_REPLY_MAIL_BODY_ENG):]
-    except:
-        local_body_without_signature = BODY_MAIL_SPLITLINE + local_body_string[local_body_string.index(BEGINNING_OF_REPLY_MAIL_BODY_JPN):]
-
-    #Replace original mail body with a non-signature version
-    local_reply_mail.Body = local_body_without_signature
-
     #If target mail is found, make reply mail
     if local_is_found == True:
+
+        #Get mail body
+        local_body_string = local_reply_mail.Body
+        #Delete user signature
+        #Locate the beginning of reply mail text and get all strings
+        try:
+            local_body_without_signature = BODY_MAIL_SPLITLINE + local_body_string[local_body_string.index(BEGINNING_OF_REPLY_MAIL_BODY_ENG):]
+        except:
+            local_body_without_signature = BODY_MAIL_SPLITLINE + local_body_string[local_body_string.index(BEGINNING_OF_REPLY_MAIL_BODY_JPN):]
+
+        #Replace original mail body with a non-signature version
+        local_reply_mail.Body = local_body_without_signature
+    
         local_reply_mail.BodyFormat = BODY_FORMAT
 
         #Make mail subject
@@ -269,28 +270,28 @@ if __name__ == "__main__":
     except:
         print('全角/半角数字1、2または3を入力してください。')
 
-    try:
-        get_configurations()
-        traverse_folder(Outlook.root_folder)
+    # try:
+    get_configurations()
+    traverse_folder(Outlook.root_folder)
 
-        #Send schedule
-        if function_selection == 1:
-            Configuration.time_delta = int(input('何日後の予定表を送りますか？(何も入力しない場合:1):') or 1)
-            send_schedule()
+    #Send schedule
+    if function_selection == 1:
+        Configuration.time_delta = int(input('何日後の予定表を送りますか？(何も入力しない場合:1):') or 1)
+        send_schedule()
 
-        #Send mail to claim beginning of work
-        elif function_selection == 2:
-            reply_mail(SUBJECT_SCHEDULE_TAG, SUBJECT_WORKSTART_TAG, BODY_WORKSTARTS)
+    #Send mail to claim beginning of work
+    elif function_selection == 2:
+        reply_mail(SUBJECT_SCHEDULE_TAG, SUBJECT_WORKSTART_TAG, BODY_WORKSTARTS)
 
-        #Send mail to claim end of work
-        elif function_selection == 3:
-            reply_mail(SUBJECT_WORKSTART_TAG, SUBJECT_WORKEND_TAG, BODY_WORKENDS)
+    #Send mail to claim end of work
+    elif function_selection == 3:
+        reply_mail(SUBJECT_WORKSTART_TAG, SUBJECT_WORKEND_TAG, BODY_WORKENDS)
 
-        #Unexpected input
-        else:
-            print('全角/半角数字1、2または3を入力してください。')
+    #Unexpected input
+    else:
+        print('全角/半角数字1、2または3を入力してください。')
 
-    except Exception as e:
-        print(e)
+    # except Exception as e:
+    #     print(e)
 
 os.system('pause')
