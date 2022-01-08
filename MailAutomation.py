@@ -229,11 +229,11 @@ def reply_mail(par_tag_for_search, par_tag_for_title, par_text_for_body):
         if par_tag_for_title == SUBJECT_WORKSTART_TAG:
             #【在宅勤務開始】 + [My name] + ' ' + [date] + ' ' + [workstart_time] + '~'
             #e.g., 【在宅勤務開始】Kevin 12/26 8:00~
-            local_reply_mail.Subject = local_reply_mail.Subject[4:].replace(par_tag_for_search, par_tag_for_title) + ' ' + calculate_rounded_time(Configuration.time_now).strftime("%H:%M") + '~'
+            local_reply_mail.Subject = local_reply_mail.Subject[4:].replace(par_tag_for_search, par_tag_for_title) + ' ' + calculate_rounded_up_time(Configuration.time_now).strftime("%H:%M") + '~'
         else:
             #【在宅勤務終了】 + [My name] + ' ' + [date] + ' ' + [workstart_time] + '~' + '[workend_time]'
             #e.g., 【在宅勤務終了】Kevin 12/26 8:00~17:00
-            local_reply_mail.Subject = local_reply_mail.Subject[4:].replace(par_tag_for_search, par_tag_for_title) + calculate_rounded_time(Configuration.time_now).strftime("%H:%M")
+            local_reply_mail.Subject = local_reply_mail.Subject[4:].replace(par_tag_for_search, par_tag_for_title) + calculate_rounded_down_time(Configuration.time_now).strftime("%H:%M")
 
         #Make mail body
         local_body_list.append(Configuration.supervisor_name + BODY_TITLE_OF_HONOR)
@@ -251,9 +251,15 @@ def reply_mail(par_tag_for_search, par_tag_for_title, par_text_for_body):
         print(local_subject_to_find + ' のメールが見つかりません。')
 
 #Round time down to the nearest 15 minutes
-def calculate_rounded_time(par_time_now):
+def calculate_rounded_down_time(par_time_now):
     delta = timedelta(minutes=15)
     rounded_time = par_time_now - (par_time_now - datetime.min) % delta
+    return rounded_time
+
+#Round time up to the nearest 15 minutes
+def calculate_rounded_up_time(par_time_now):
+    delta = timedelta(minutes=15)
+    rounded_time = par_time_now + (datetime.min - par_time_now) % delta
     return rounded_time
 
 if __name__ == "__main__":
@@ -261,7 +267,7 @@ if __name__ == "__main__":
         #If an empty input is given, end script and show a message
         function_selection = int(input('機能を選択してください(1:予定連絡、2:開始連絡、3:終了連絡):') or 0)
     except:
-        print('全角/半角数字1、2または3をご入力ください。')
+        print('全角/半角数字1、2または3を入力してください。')
 
     try:
         get_configurations()
@@ -269,7 +275,7 @@ if __name__ == "__main__":
 
         #Send schedule
         if function_selection == 1:
-            Configuration.time_delta = int(input('何日後の予定表を送りたいですか？(何も入力しない場合:1):') or 1)
+            Configuration.time_delta = int(input('何日後の予定表を送りますか？(何も入力しない場合:1):') or 1)
             send_schedule()
 
         #Send mail to claim beginning of work
@@ -282,7 +288,7 @@ if __name__ == "__main__":
 
         #Unexpected input
         else:
-            print('全角/半角数字1、2または3をご入力ください。')
+            print('全角/半角数字1、2または3を入力してください。')
 
     except Exception as e:
         print(e)
