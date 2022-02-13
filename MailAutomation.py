@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from logging import root
 import win32com.client
 from datetime import datetime, timedelta, time
 import os
@@ -62,14 +63,13 @@ class Outlook:
     #Set sentmail(folder)
     sentmail = mapi_namespace.GetDefaultFolder(FOLDER_SENTMAIL)
 
-    #Set Inbox
+    #Set inbox
     inbox = mapi_namespace.GetDefaultFolder(FOLDER_INBOX)
-
-    #Set root folder
-    root_folder = mapi_namespace.Folders.Item(FOLDER_ROOT)
 
     #Target folder is not available by default
     target_folder = None
+
+    is_folder_found = False
 
 def get_configurations():
 
@@ -95,11 +95,19 @@ def get_configurations():
         Configuration.target_folder_name = config_dict['FolderName']
 
 def traverse_folder(par_parent_folder):
-    try:
-        Outlook.target_folder = par_parent_folder.Folders[Configuration.target_folder_name]
-    except:
-        for subfolder in par_parent_folder.Folders:
-            traverse_folder(subfolder)
+    if Outlook.is_folder_found == False:
+        if Configuration.target_folder_name != '受信トレイ':
+            try:
+                Outlook.target_folder = par_parent_folder.Folders[Configuration.target_folder_name]
+                Outlook.is_folder_found = True
+                return
+            except:
+                for subfolder in par_parent_folder.Folders:
+                    traverse_folder(subfolder)
+        else:
+            Outlook.target_folder = par_parent_folder
+    else:
+    	pass
 
 def send_schedule():
     #Get date of specified day
@@ -270,28 +278,28 @@ if __name__ == "__main__":
     except:
         print('全角/半角数字1、2または3を入力してください。')
 
-    # try:
-    get_configurations()
-    traverse_folder(Outlook.root_folder)
+    try:
+        get_configurations()
+        traverse_folder(Outlook.inbox)
 
-    #Send schedule
-    if function_selection == 1:
-        Configuration.time_delta = int(input('何日後の予定表を送りますか？(何も入力しない場合:1):') or 1)
-        send_schedule()
+        #Send schedule
+        if function_selection == 1:
+            Configuration.time_delta = int(input('何日後の予定表を送りますか？(何も入力しない場合:1):') or 1)
+            send_schedule()
 
-    #Send mail to claim beginning of work
-    elif function_selection == 2:
-        reply_mail(SUBJECT_SCHEDULE_TAG, SUBJECT_WORKSTART_TAG, BODY_WORKSTARTS)
+        #Send mail to claim beginning of work
+        elif function_selection == 2:
+            reply_mail(SUBJECT_SCHEDULE_TAG, SUBJECT_WORKSTART_TAG, BODY_WORKSTARTS)
 
-    #Send mail to claim end of work
-    elif function_selection == 3:
-        reply_mail(SUBJECT_WORKSTART_TAG, SUBJECT_WORKEND_TAG, BODY_WORKENDS)
+        #Send mail to claim end of work
+        elif function_selection == 3:
+            reply_mail(SUBJECT_WORKSTART_TAG, SUBJECT_WORKEND_TAG, BODY_WORKENDS)
 
-    #Unexpected input
-    else:
-        print('全角/半角数字1、2または3を入力してください。')
+        #Unexpected input
+        else:
+            print('全角/半角数字1、2または3を入力してください。')
 
-    # except Exception as e:
-    #     print(e)
+    except Exception as e:
+        print(e)
 
 os.system('pause')
