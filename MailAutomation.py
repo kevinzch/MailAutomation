@@ -12,17 +12,17 @@ import json
 START_TIME_STR = '06:00:00'
 END_TIME_STR   = '22:00:00'
 
-#Reference: https://docs.microsoft.com/en-us/office/vba/api/outlook.oldefaultfolders
+# Reference: https://docs.microsoft.com/en-us/office/vba/api/outlook.oldefaultfolders
 FOLDER_CALENDAR = 9
 FOLDER_SENTMAIL = 5
 FOLDER_INBOX = 6
 FOLDER_ROOT = 1
 
-#Reference: https://docs.microsoft.com/en-us/office/vba/api/outlook.olbodyformat
-#1: plain, 2: HTML, 3: richtext
+# Reference: https://docs.microsoft.com/en-us/office/vba/api/outlook.olbodyformat
+# 1: plain, 2: HTML, 3: richtext
 BODY_FORMAT = 3
 
-#Tags for searching items
+# Tags for searching items
 SUBJECT_SCHEDULE_TAG = '【在宅勤務予定】'
 SUBJECT_WORKSTART_TAG = '【在宅勤務開始】'
 SUBJECT_WORKEND_TAG = '【在宅勤務終了】'
@@ -35,16 +35,16 @@ BODY_WORKSTARTS = 'です。\r\n\r\n本日在宅勤務開始します。\r\n'
 BODY_WORKENDS = 'です。\r\n\r\n本日在宅勤務終了します。\r\n'
 BODY_SCHEDULE_BORDER = '------------------------------------------------------------------'
 BODY_SIGNOFF = '以上、よろしくお願いいたします。\r\n'
-BODY_MAIL_SPLITLINE = '_____________________________________________\r\n' #45 underscores
+BODY_MAIL_SPLITLINE = '_____________________________________________\r\n' # 45 underscores
 
-#String used for locating reply mail body.
+# String used for locating reply mail body.
 BEGINNING_OF_REPLY_MAIL_BODY_JPN = '差出人:'
 BEGINNING_OF_REPLY_MAIL_BODY_ENG = 'From:'
 
 class Configuration:
     config_file_name = 'config.json'
 
-    #Customizable variable
+    # Customizable variable
     to_address = ''
     cc_address = ''
     my_name = ''
@@ -57,16 +57,16 @@ class Outlook:
     outlook_app = win32com.client.Dispatch("Outlook.Application")
     mapi_namespace = outlook_app.GetNamespace("MAPI")
 
-    #Get all calendar items
+    # Get all calendar items
     calender_items = mapi_namespace.GetDefaultFolder(FOLDER_CALENDAR).Items
 
-    #Set sentmail(folder)
+    # Set sentmail(folder)
     sentmail = mapi_namespace.GetDefaultFolder(FOLDER_SENTMAIL)
 
-    #Set inbox
+    # Set inbox
     inbox = mapi_namespace.GetDefaultFolder(FOLDER_INBOX)
 
-    #Target folder is not available by default
+    # Target folder is not available by default
     target_folder = None
 
     is_folder_found = False
@@ -76,16 +76,16 @@ def get_configurations():
     Configuration.time_delta = 0
     Configuration.time_now = datetime.now()
 
-    #If application is a frozen exe
+    # If application is a frozen exe
     if getattr(sys, 'frozen', False):
         app_path = os.path.dirname(sys.executable)
-    #If application is a script file
+    # If application is a script file
     else:
         app_path = os.path.dirname(__file__)
 
     config_file_path = os.path.join(app_path, Configuration.config_file_name)
 
-    #Load customizable variable from configuration file
+    # Load customizable variable from configuration file
     with open(config_file_path, encoding='utf-8') as config_file:
         config_dict = json.load(config_file)
         Configuration.to_address = config_dict['To']
@@ -110,13 +110,13 @@ def traverse_folder(par_parent_folder):
     	pass
 
 def send_schedule():
-    #Get date of specified day
-    local_work_date = datetime.today().date() + timedelta(Configuration.time_delta)      #Format: yyyy-mm-dd
+    # Get date of specified day
+    local_work_date = datetime.today().date() + timedelta(Configuration.time_delta)      # Format: yyyy-mm-dd
     local_start_time = time.fromisoformat(START_TIME_STR)
     local_start_datetime = datetime.combine(local_work_date, local_start_time)
     local_end_time = time.fromisoformat(END_TIME_STR)
     local_end_datetime = datetime.combine(local_work_date, local_end_time)
-    local_work_date_mm_dd = local_work_date.strftime("%#m/%#d")                          #Format: mm-dd without leading zero. Add a # between the % and the letter to remove leading zero.
+    local_work_date_mm_dd = local_work_date.strftime("%#m/%#d")                          # Format: mm-dd without leading zero. Add a # between the % and the letter to remove leading zero.
 
     local_cal_items = Outlook.calender_items
     local_cal_items.IncludeRecurrences = True
@@ -125,7 +125,7 @@ def send_schedule():
     local_restriction = "[Start] >= '" + local_start_datetime.strftime("%Y-%m-%d %H:%M") + "' And [End] <= '" + local_end_datetime.strftime("%Y-%m-%d %H:%M") + "'"
     local_cal_items = local_cal_items.Restrict(local_restriction)
 
-    #Make mail body
+    # Make mail body
     local_body_list = []
     local_body_list.append(Configuration.supervisor_name + BODY_TITLE_OF_HONOR)
     local_body_list.append(Configuration.my_name + BODY_DESU)
@@ -152,8 +152,8 @@ def send_schedule():
     local_new_mail.To = Configuration.to_address
     local_new_mail.CC = Configuration.cc_address
 
-    #【在宅勤務予定】 + [My name] + ' ' + [date]
-    #e.g., 【在宅勤務予定】Kevin 12/26
+    # 【在宅勤務予定】 + [My name] + ' ' + [date]
+    # e.g., 【在宅勤務予定】Kevin 12/26
     local_new_mail.Subject = SUBJECT_SCHEDULE_TAG + Configuration.my_name + ' ' + local_work_date_mm_dd
 
     local_new_mail.Body = local_mailbody
@@ -164,44 +164,44 @@ def reply_mail(par_tag_for_search, par_tag_for_title, par_text_for_body):
 
     print('メール検索中。。。')
 
-    #Local variables
+    # Local variables
     local_is_found = False
-    local_reply_mail = None             #Mail object
-    local_body_list = []                #Mail body list
-    local_body_string = ''              #Mail body string
-    local_body_without_signature = ''   #Mail body after deleting signature
+    local_reply_mail = None             # Mail object
+    local_body_list = []                # Mail body list
+    local_body_string = ''              # Mail body string
+    local_body_without_signature = ''   # Mail body after deleting signature
 
-    #Get today's date
+    # Get today's date
     local_work_date = datetime.today().date()
     local_work_date_mm_dd = local_work_date.strftime("%#m/%#d")
     local_subject_to_find = par_tag_for_search + Configuration.my_name + ' ' + local_work_date_mm_dd
 
-    #Get sentmail items
+    # Get sentmail items
     local_sent_items = Outlook.sentmail.Items
-    #Sort items to search from the latest
+    # Sort items to search from the latest
     local_sent_items.Sort('[SentOn]', True)
 
-    #Get received items
+    # Get received items
     local_received_items = Outlook.target_folder.Items
-    #Sort items to search from the latest
+    # Sort items to search from the latest
     local_received_items.Sort('[ReceivedTime]', True)
 
-    #Search mail subject in sentmail items. User must have sent mail at least once.
+    # Search mail subject in sentmail items. User must have sent mail at least once.
     for tmp_sent_item in local_sent_items:
 
         if local_subject_to_find in tmp_sent_item.Subject:
             local_is_found = True
-            #tmp_sent_item.Bodyformat = BODY_FORMAT
+            # tmp_sent_item.Bodyformat = BODY_FORMAT
             local_reply_mail = tmp_sent_item.Reply()
 
-            #Search mail subject in received items
+            # Search mail subject in received items
             for tmp_received_item in local_received_items:
 
                 if local_subject_to_find in tmp_received_item.Subject:
 
-                    #Choose the latest mail
+                    # Choose the latest mail
                     if tmp_received_item.ReceivedTime > tmp_sent_item.SentOn:
-                        #tmp_sent_item.Bodyformat = BODY_FORMAT
+                        # tmp_sent_item.Bodyformat = BODY_FORMAT
                         local_reply_mail = tmp_received_item.Reply()
 
                     else:
@@ -217,40 +217,40 @@ def reply_mail(par_tag_for_search, par_tag_for_title, par_text_for_body):
         else:
             pass
 
-    #If target mail is found, make reply mail
+    # If target mail is found, make reply mail
     if local_is_found == True:
 
-        #Get mail body
+        # Get mail body
         local_body_string = local_reply_mail.Body
-        #Delete user signature
-        #Locate the beginning of reply mail text and get all strings
+        # Delete user signature
+        # Locate the beginning of reply mail text and get all strings
         try:
             local_body_without_signature = BODY_MAIL_SPLITLINE + local_body_string[local_body_string.index(BEGINNING_OF_REPLY_MAIL_BODY_ENG):]
         except:
             local_body_without_signature = BODY_MAIL_SPLITLINE + local_body_string[local_body_string.index(BEGINNING_OF_REPLY_MAIL_BODY_JPN):]
 
-        #Replace original mail body with a non-signature version
+        # Replace original mail body with a non-signature version
         local_reply_mail.Body = local_body_without_signature
     
         local_reply_mail.BodyFormat = BODY_FORMAT
 
-        #Make mail subject
+        # Make mail subject
         if par_tag_for_title == SUBJECT_WORKSTART_TAG:
-            #【在宅勤務開始】 + [My name] + ' ' + [date] + ' ' + [workstart_time] + '~'
-            #e.g., 【在宅勤務開始】Kevin 12/26 8:00~
+            # 【在宅勤務開始】 + [My name] + ' ' + [date] + ' ' + [workstart_time] + '~'
+            # e.g., 【在宅勤務開始】Kevin 12/26 8:00~
             local_reply_mail.Subject = local_reply_mail.Subject[4:].replace(par_tag_for_search, par_tag_for_title) + ' ' + calculate_rounded_up_time(Configuration.time_now).strftime("%H:%M") + '~'
         else:
-            #【在宅勤務終了】 + [My name] + ' ' + [date] + ' ' + [workstart_time] + '~' + '[workend_time]'
-            #e.g., 【在宅勤務終了】Kevin 12/26 8:00~17:00
+            # 【在宅勤務終了】 + [My name] + ' ' + [date] + ' ' + [workstart_time] + '~' + '[workend_time]'
+            # e.g., 【在宅勤務終了】Kevin 12/26 8:00~17:00
             local_reply_mail.Subject = local_reply_mail.Subject[4:].replace(par_tag_for_search, par_tag_for_title) + calculate_rounded_down_time(Configuration.time_now).strftime("%H:%M")
 
-        #Make mail body
+        # Make mail body
         local_body_list.append(Configuration.supervisor_name + BODY_TITLE_OF_HONOR)
         local_body_list.append(Configuration.my_name + par_text_for_body)
         local_body_list.append(BODY_SIGNOFF)
         local_reply_mail.Body = '\r\n'.join(local_body_list) + local_reply_mail.Body
 
-        #Add contacts
+        # Add contacts
         local_reply_mail.To = Configuration.to_address
         local_reply_mail.CC = Configuration.cc_address
 
@@ -259,13 +259,13 @@ def reply_mail(par_tag_for_search, par_tag_for_title, par_text_for_body):
     else:
         print(local_subject_to_find + ' のメールが見つかりません。')
 
-#Round time down to the nearest 15 minutes
+# Round time down to the nearest 15 minutes
 def calculate_rounded_down_time(par_time_now):
     delta = timedelta(minutes=15)
     rounded_time = par_time_now - (par_time_now - datetime.min) % delta
     return rounded_time
 
-#Round time up to the nearest 15 minutes
+# Round time up to the nearest 15 minutes
 def calculate_rounded_up_time(par_time_now):
     delta = timedelta(minutes=15)
     rounded_time = par_time_now + (datetime.min - par_time_now) % delta
@@ -273,7 +273,7 @@ def calculate_rounded_up_time(par_time_now):
 
 if __name__ == "__main__":
     try:
-        #If an empty input is given, end script and show a message
+        # If an empty input is given, end script and show a message
         function_selection = int(input('機能を選択してください(1:予定連絡、2:開始連絡、3:終了連絡):') or 0)
     except:
         print('全角/半角数字1、2または3を入力してください。')
@@ -282,20 +282,20 @@ if __name__ == "__main__":
         get_configurations()
         traverse_folder(Outlook.inbox)
 
-        #Send schedule
+        # Send schedule
         if function_selection == 1:
             Configuration.time_delta = int(input('何日後の予定表を送りますか？(何も入力しない場合:1):') or 1)
             send_schedule()
 
-        #Send mail to claim beginning of work
+        # Send mail to claim beginning of work
         elif function_selection == 2:
             reply_mail(SUBJECT_SCHEDULE_TAG, SUBJECT_WORKSTART_TAG, BODY_WORKSTARTS)
 
-        #Send mail to claim end of work
+        # Send mail to claim end of work
         elif function_selection == 3:
             reply_mail(SUBJECT_WORKSTART_TAG, SUBJECT_WORKEND_TAG, BODY_WORKENDS)
 
-        #Unexpected input
+        # Unexpected input
         else:
             print('全角/半角数字1、2または3を入力してください。')
 
